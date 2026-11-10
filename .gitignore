@@ -1,0 +1,36 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+out/
+release/
+*.tsbuildinfo
+
+# Ambiente / segredos
+.env
+.env.*
+!.env.example
+
+# Dados locais do app (perfil do navegador com login, banco, logs)
+browser-profile/
+data/
+*.sqlite
+*.sqlite3
+*.db
+logs/
+*.log
+
+# Playwright
+test-results/
+playwright-report/
+
+# Cobertura
+coverage/
+
+# SO / editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
