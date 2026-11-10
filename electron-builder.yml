@@ -1,0 +1,27 @@
+appId: br.kevma.radar-revenda
+productName: Radar Revenda
+copyright: Uso pessoal
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# O Playwright lê arquivos próprios em tempo de execução; fora do .asar é mais seguro.
+asarUnpack:
+  - node_modules/playwright-core/**
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+  artifactName: RadarRevenda-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Radar Revenda
+  uninstallDisplayName: Radar Revenda
+  deleteAppDataOnUninstall: false

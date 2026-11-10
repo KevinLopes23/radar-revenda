@@ -60,6 +60,22 @@ export class BrowserManager {
     return this.exclusive(() => this.withContext((context) => context.clearCookies({ domain: pattern })))
   }
 
+  /**
+   * Executa uma tarefa numa aba nova do Chrome do app (usado pela varredura).
+   * Se o Chrome estiver fechado, ele abre minimizado para não atrapalhar.
+   */
+  withPage<T>(task: (page: Page) => Promise<T>): Promise<T> {
+    return this.exclusive(async () => {
+      const context = await this.ensureVisibleContext(true)
+      const page = await context.newPage()
+      try {
+        return await task(page)
+      } finally {
+        await page.close().catch(() => undefined)
+      }
+    })
+  }
+
   pageUrls(): string[] {
     return this.context?.pages().map((p) => p.url()) ?? []
   }
@@ -72,12 +88,14 @@ export class BrowserManager {
     })
   }
 
-  private async ensureVisibleContext(): Promise<BrowserContext> {
+  private async ensureVisibleContext(minimized = false): Promise<BrowserContext> {
     if (this.context) return this.context
     const context = await chromium.launchPersistentContext(this.profileDir, {
       channel: CHROME_CHANNEL,
       headless: false,
-      viewport: null
+      viewport: null,
+      locale: 'pt-BR',
+      args: minimized ? ['--start-minimized'] : []
     })
     context.on('close', () => {
       if (this.context !== context) return

@@ -29,6 +29,8 @@ export interface Platform {
   /** Exibe o botão de conectar conta (fontes só de referência não precisam). */
   readonly connectable: boolean
   readonly hint: string
+  /** Estado assumido quando o anúncio não diz se é novo ou usado. */
+  readonly defaultCondition: 'novo' | 'usado'
 }
 
 export const PLATFORMS: readonly Platform[] = [
@@ -43,7 +45,8 @@ export const PLATFORMS: readonly Platform[] = [
     roles: { buscaOfertas: true, precoReferencia: true, revenda: true },
     loginRequired: true,
     connectable: true,
-    hint: 'Obrigatório: o Marketplace só mostra anúncios para quem está logado.'
+    hint: 'Obrigatório: o Marketplace só mostra anúncios para quem está logado.',
+    defaultCondition: 'usado'
   },
   {
     id: 'mercadolivre',
@@ -55,7 +58,8 @@ export const PLATFORMS: readonly Platform[] = [
     roles: { buscaOfertas: true, precoReferencia: true, revenda: true },
     loginRequired: false,
     connectable: true,
-    hint: 'Opcional: a busca funciona sem login; conectar ajuda nas próximas etapas (anúncios e mensagens).'
+    hint: 'Opcional: a busca costuma funcionar sem login; se o site pedir verificação, conecte a conta.',
+    defaultCondition: 'novo'
   },
   {
     id: 'olx',
@@ -67,7 +71,8 @@ export const PLATFORMS: readonly Platform[] = [
     roles: { buscaOfertas: true, precoReferencia: true, revenda: true },
     loginRequired: false,
     connectable: true,
-    hint: 'Opcional: a busca funciona sem login; logado você vê o contato do vendedor.'
+    hint: 'Opcional: a busca funciona sem login; logado você vê o contato do vendedor.',
+    defaultCondition: 'usado'
   },
   {
     id: 'enjoei',
@@ -79,7 +84,8 @@ export const PLATFORMS: readonly Platform[] = [
     roles: { buscaOfertas: true, precoReferencia: true, revenda: true },
     loginRequired: false,
     connectable: true,
-    hint: 'Opcional: forte em eletrônicos usados, moda e itens de marca.'
+    hint: 'Opcional: forte em eletrônicos usados, moda e itens de marca.',
+    defaultCondition: 'usado'
   },
   {
     id: 'shopee',
@@ -91,7 +97,8 @@ export const PLATFORMS: readonly Platform[] = [
     roles: { buscaOfertas: true, precoReferencia: true, revenda: true },
     loginRequired: false,
     connectable: true,
-    hint: 'Opcional: bom para preço de novo/importado e para revender acessórios.'
+    hint: 'Opcional, mas a Shopee só mostra a busca para quem está logado. Bom para preço de novo.',
+    defaultCondition: 'novo'
   },
   {
     id: 'buscape',
@@ -103,7 +110,8 @@ export const PLATFORMS: readonly Platform[] = [
     roles: { buscaOfertas: false, precoReferencia: true, revenda: false },
     loginRequired: false,
     connectable: false,
-    hint: 'Comparador de lojas: referência de preço do produto novo. Não precisa de conta.'
+    hint: 'Comparador de lojas: referência de preço do produto novo em toda varredura. Não precisa de conta.',
+    defaultCondition: 'novo'
   }
 ]
 

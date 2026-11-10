@@ -1,7 +1,10 @@
 import { PLATFORMS } from '../../../shared/platforms'
+import { GeminiSection } from '../components/GeminiSection'
 import { Icon } from '../components/Icon'
 import { PlatformCard } from '../components/PlatformCard'
+import { PreferencesSection } from '../components/PreferencesSection'
 import type { UseAccounts } from '../hooks/useAccounts'
+import { useRemote } from '../hooks/useRemote'
 
 type Props = {
   accounts: UseAccounts
@@ -9,13 +12,12 @@ type Props = {
 
 export function SettingsPage({ accounts }: Props) {
   const { accounts: states, busy, error, run, closeBrowser } = accounts
+  const settings = useRemote(() => window.radar.settings.get())
   const connectable = PLATFORMS.filter((p) => p.connectable)
-  const connectedCount = connectable.filter(
-    (p) => states.find((s) => s.platformId === p.id)?.status === 'conectado'
-  ).length
+  const connectedCount = connectable.filter((p) => states.find((s) => s.platformId === p.id)?.status === 'conectado').length
 
   return (
-    <div className="page">
+    <div className="page page--wide">
       <header className="page__header">
         <p className="eyebrow">Configurações</p>
         <h1>Contas conectadas</h1>
@@ -31,9 +33,9 @@ export function SettingsPage({ accounts }: Props) {
       <aside className="notice">
         <Icon name="shield" size={22} />
         <p>
-          O login é feito por você, numa janela do Chrome do próprio app. O Radar <strong>nunca vê nem guarda sua
-          senha</strong>; a sessão fica salva só neste computador e pode ser apagada a qualquer momento em
-          &quot;Desconectar&quot;.
+          O login é feito por você, numa janela do Chrome do próprio app. O Radar <strong>nunca vê nem guarda sua senha</strong>; a
+          sessão fica salva só neste computador e pode ser apagada em &quot;Desconectar&quot;. Se um site pedir verificação
+          (&quot;não sou um robô&quot;), clique em Conectar/Abrir site e resolva por lá.
         </p>
         <button type="button" className="btn btn--ghost" onClick={() => void closeBrowser()}>
           Fechar navegador do app
@@ -60,23 +62,13 @@ export function SettingsPage({ accounts }: Props) {
         ))}
       </section>
 
-      <section className="later" aria-label="Em breve">
-        <div className="later__item">
-          <h2>Inteligência artificial</h2>
-          <p>Chave da API do Google Gemini para identificar produtos e analisar fotos.</p>
-          <span className="pill">Etapa 3</span>
-        </div>
-        <div className="later__item">
-          <h2>Taxas de revenda</h2>
-          <p>Comissão, taxa fixa e frete de cada canal para calcular o lucro real.</p>
-          <span className="pill">Etapa 3</span>
-        </div>
-        <div className="later__item">
-          <h2>Ritmo da varredura</h2>
-          <p>Intervalo entre rodadas e limite de anúncios por vez, para proteger suas contas.</p>
-          <span className="pill">Etapa 2</span>
-        </div>
-      </section>
+      {settings.error && <p className="alert" role="alert">{settings.error}</p>}
+      {settings.data && (
+        <>
+          <GeminiSection settings={settings.data} onChange={(next) => void settings.run(async () => next)} />
+          <PreferencesSection key={settings.data.geminiModel} settings={settings.data} onChange={(next) => void settings.run(async () => next)} />
+        </>
+      )}
     </div>
   )
 }

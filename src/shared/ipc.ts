@@ -1,5 +1,18 @@
 /** Contrato IPC compartilhado entre main, preload e renderer. */
 import type { PlatformId } from './platforms'
+import type {
+  GeminiTestResult,
+  Opportunity,
+  OpportunityStatus,
+  Purchase,
+  PurchaseInput,
+  SaleInput,
+  SavedSearch,
+  ScanStatus,
+  SearchInput,
+  Settings,
+  SettingsView
+} from './types'
 
 export type AccountStatus =
   | 'verificando'
@@ -17,6 +30,9 @@ export interface AccountState {
   readonly updatedAt: string
 }
 
+type Listener<T> = (value: T) => void
+type Unsubscribe = () => void
+
 export interface RadarApi {
   readonly accounts: {
     list(): Promise<readonly AccountState[]>
@@ -28,10 +44,45 @@ export interface RadarApi {
     disconnect(platformId: PlatformId): Promise<readonly AccountState[]>
     /** Fecha a janela do navegador; as sessões continuam salvas. */
     closeBrowser(): Promise<readonly AccountState[]>
-    onChange(listener: (states: readonly AccountState[]) => void): () => void
+    onChange(listener: Listener<readonly AccountState[]>): Unsubscribe
+  }
+  readonly settings: {
+    get(): Promise<SettingsView>
+    save(settings: Settings): Promise<SettingsView>
+    setGeminiKey(key: string): Promise<SettingsView>
+    clearGeminiKey(): Promise<SettingsView>
+    testGemini(): Promise<GeminiTestResult>
+  }
+  readonly searches: {
+    list(): Promise<readonly SavedSearch[]>
+    create(input: SearchInput): Promise<readonly SavedSearch[]>
+    update(id: string, input: SearchInput): Promise<readonly SavedSearch[]>
+    remove(id: string): Promise<readonly SavedSearch[]>
+  }
+  readonly scan: {
+    status(): Promise<ScanStatus>
+    /** `null` = todas as buscas ativas. */
+    start(searchId: string | null): Promise<ScanStatus>
+    stop(): Promise<ScanStatus>
+    onStatus(listener: Listener<ScanStatus>): Unsubscribe
+  }
+  readonly opportunities: {
+    list(): Promise<readonly Opportunity[]>
+    setStatus(id: string, status: OpportunityStatus): Promise<readonly Opportunity[]>
+    clearDiscarded(): Promise<readonly Opportunity[]>
+    onChange(listener: Listener<readonly Opportunity[]>): Unsubscribe
+  }
+  readonly purchases: {
+    list(): Promise<readonly Purchase[]>
+    add(input: PurchaseInput): Promise<readonly Purchase[]>
+    sell(id: string, sale: SaleInput): Promise<readonly Purchase[]>
+    remove(id: string): Promise<readonly Purchase[]>
   }
   readonly app: {
     version(): Promise<string>
+    /** Abre um link de anúncio no navegador padrão (só domínios das plataformas). */
+    openExternal(url: string): Promise<void>
+    onNavigate(listener: Listener<string>): Unsubscribe
   }
 }
 
@@ -42,5 +93,28 @@ export const IPC = {
   accountsDisconnect: 'accounts:disconnect',
   accountsCloseBrowser: 'accounts:close-browser',
   accountsChanged: 'accounts:changed',
-  appVersion: 'app:version'
+  settingsGet: 'settings:get',
+  settingsSave: 'settings:save',
+  settingsSetGeminiKey: 'settings:set-gemini-key',
+  settingsClearGeminiKey: 'settings:clear-gemini-key',
+  settingsTestGemini: 'settings:test-gemini',
+  searchesList: 'searches:list',
+  searchesCreate: 'searches:create',
+  searchesUpdate: 'searches:update',
+  searchesRemove: 'searches:remove',
+  scanStatus: 'scan:status',
+  scanStart: 'scan:start',
+  scanStop: 'scan:stop',
+  scanChanged: 'scan:changed',
+  opportunitiesList: 'opportunities:list',
+  opportunitiesSetStatus: 'opportunities:set-status',
+  opportunitiesClearDiscarded: 'opportunities:clear-discarded',
+  opportunitiesChanged: 'opportunities:changed',
+  purchasesList: 'purchases:list',
+  purchasesAdd: 'purchases:add',
+  purchasesSell: 'purchases:sell',
+  purchasesRemove: 'purchases:remove',
+  appVersion: 'app:version',
+  appOpenExternal: 'app:open-external',
+  appNavigate: 'app:navigate'
 } as const

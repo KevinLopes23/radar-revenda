@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactElement } from 'react'
 import { Icon, type IconName } from './components/Icon'
 import { useAccounts } from './hooks/useAccounts'
-import { ComingSoonPage } from './pages/ComingSoonPage'
+import { HistoryPage } from './pages/HistoryPage'
 import { HomePage } from './pages/HomePage'
+import { OpportunitiesPage } from './pages/OpportunitiesPage'
+import { ScanPage } from './pages/ScanPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 type PageId = 'inicio' | 'varredura' | 'oportunidades' | 'historico' | 'configuracoes'
@@ -15,6 +17,8 @@ const NAV: ReadonlyArray<{ id: PageId; label: string; icon: IconName }> = [
   { id: 'configuracoes', label: 'Configurações', icon: 'settings' }
 ]
 
+const isPageId = (value: string): value is PageId => NAV.some((n) => n.id === value)
+
 export function App() {
   const [page, setPage] = useState<PageId>('inicio')
   const [version, setVersion] = useState('')
@@ -22,38 +26,23 @@ export function App() {
 
   useEffect(() => {
     window.radar.app.version().then(setVersion, () => setVersion(''))
+    return window.radar.app.onNavigate((target) => {
+      if (isPageId(target)) setPage(target)
+    })
   }, [])
 
   const content = ((): ReactElement => {
     switch (page) {
       case 'inicio':
-        return <HomePage accounts={accounts} onOpenSettings={() => setPage('configuracoes')} />
+        return <HomePage accounts={accounts} onNavigate={setPage} />
+      case 'varredura':
+        return <ScanPage accounts={accounts.accounts} />
+      case 'oportunidades':
+        return <OpportunitiesPage />
+      case 'historico':
+        return <HistoryPage />
       case 'configuracoes':
         return <SettingsPage accounts={accounts} />
-      case 'varredura':
-        return (
-          <ComingSoonPage
-            stage="Etapa 2"
-            title="Varredura"
-            description="Buscas salvas por termo, raio e preço máximo, rodando em todas as plataformas conectadas."
-          />
-        )
-      case 'oportunidades':
-        return (
-          <ComingSoonPage
-            stage="Etapas 3 e 4"
-            title="Oportunidades"
-            description="Anúncios ordenados por lucro, com nota, comparativo de preços e alertas de golpe."
-          />
-        )
-      case 'historico':
-        return (
-          <ComingSoonPage
-            stage="Etapa 5"
-            title="Histórico"
-            description="O que você comprou, por quanto vendeu e o lucro real de cada negócio."
-          />
-        )
     }
   })()
 
