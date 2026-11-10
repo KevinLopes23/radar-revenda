@@ -14,13 +14,15 @@ Busca salva ──► Varredura (Playwright) ──► Anúncio bruto ──► 
 - **Main**: janela, banco SQLite, agendador de varreduras, Playwright, chamadas à IA e às fontes de preço.
   Toda chave de API e todo acesso à rede ficam aqui.
 - **Preload**: ponte IPC tipada e mínima (`contextIsolation: true`, `nodeIntegration: false`).
-- **Renderer**: React (telas: Varredura, Oportunidades, Detalhe, Histórico, Configurações).
+- **Renderer**: React (telas: Início, Varredura, Oportunidades, Histórico, Configurações).
+- **Shared**: contrato IPC (`ipc.ts`) e catálogo de plataformas (`platforms.ts`).
 
 ## Módulos (main)
 
 | Módulo | Responsabilidade |
 |---|---|
-| `scanner/` | Abre o Marketplace com perfil persistente, executa buscas, extrai anúncios, respeita limites |
+| `accounts/` | Chrome do app com perfil persistente (`BrowserManager`), status de cada conta (`AccountsService`), confirmações manuais (`accounts.json`) |
+| `scanner/` | Executa as buscas em cada plataforma (Marketplace, OLX, Enjoei, ML, Shopee), extrai anúncios, respeita limites |
 | `ai/` | Normaliza o anúncio em produto estruturado (modelo, variante, estado, riscos) |
 | `pricing/` | Fontes de preço (uma por plataforma) atrás de uma interface comum |
 | `analysis/` | Mediana de mercado, preço sugerido, lucro por canal, nota 0–10 |
