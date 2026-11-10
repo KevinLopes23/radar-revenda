@@ -27,6 +27,8 @@ function escapeRegExp(value: string): string {
 export class BrowserManager {
   private context: BrowserContext | null = null
   private queue: Promise<unknown> = Promise.resolve()
+  /** A janela foi aberta (ou trazida à frente) pelo usuário para fazer login. */
+  private openedByUser = false
 
   constructor(
     private readonly profileDir: string,
@@ -41,6 +43,7 @@ export class BrowserManager {
   open(url: string): Promise<Page> {
     return this.exclusive(async () => {
       const context = await this.ensureVisibleContext()
+      this.openedByUser = true
       const blank = context.pages().find((p) => p.url() === BLANK_PAGE)
       const page = blank ?? (await context.newPage())
       await page.goto(url, { waitUntil: 'domcontentloaded' })
@@ -80,12 +83,32 @@ export class BrowserManager {
     return this.context?.pages().map((p) => p.url()) ?? []
   }
 
+  /** Fecha a janela (a pedido do usuário). */
   close(): Promise<void> {
+    return this.exclusive(() => this.closeContext(false))
+  }
+
+  /** Fecha a janela só se ela foi aberta apenas para a varredura (nunca a janela de login do usuário). */
+  releaseAfterScan(): Promise<void> {
     return this.exclusive(async () => {
-      const context = this.context
-      this.context = null
-      if (context) await context.close().catch(() => undefined)
+      if (!this.openedByUser) await this.closeContext(true)
     })
+  }
+
+  /** Encerramento do app: fecha na hora, sem esperar a fila de operações. */
+  async dispose(): Promise<void> {
+    const context = this.context
+    this.context = null
+    if (context) await context.close().catch(() => undefined)
+  }
+
+  private async closeContext(notify: boolean): Promise<void> {
+    const context = this.context
+    this.context = null
+    this.openedByUser = false
+    if (!context) return
+    await context.close().catch(() => undefined)
+    if (notify) this.onClosed()
   }
 
   private async ensureVisibleContext(minimized = false): Promise<BrowserContext> {
@@ -95,11 +118,13 @@ export class BrowserManager {
       headless: false,
       viewport: null,
       locale: 'pt-BR',
+      acceptDownloads: false,
       args: minimized ? ['--start-minimized'] : []
     })
     context.on('close', () => {
       if (this.context !== context) return
       this.context = null
+      this.openedByUser = false
       this.onClosed()
     })
     this.context = context
@@ -111,7 +136,8 @@ export class BrowserManager {
     if (this.context) return task(this.context)
     const headless = await chromium.launchPersistentContext(this.profileDir, {
       channel: CHROME_CHANNEL,
-      headless: true
+      headless: true,
+      acceptDownloads: false
     })
     try {
       return await task(headless)

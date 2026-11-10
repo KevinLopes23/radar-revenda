@@ -1,4 +1,5 @@
 import { getPlatform, type PlatformId } from '../../../shared/platforms'
+import type { ChannelFee, Purchase } from '../../../shared/types'
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -36,6 +37,14 @@ export function errorMessage(error: unknown): string {
 
 export function platformName(id: PlatformId): string {
   return getPlatform(id).name
+}
+
+/** Lucro real de uma venda, descontando as taxas do canal onde foi vendido. */
+export function netSaleProfit(purchase: Purchase, fees: Readonly<Record<PlatformId, ChannelFee>> | null): number | null {
+  if (purchase.soldPrice === null) return null
+  const fee = purchase.soldChannel && fees ? fees[purchase.soldChannel] : null
+  const charges = fee ? (purchase.soldPrice * fee.percent) / 100 + fee.fixed + fee.shipping : 0
+  return Math.round((purchase.soldPrice - charges - purchase.paidPrice) * 100) / 100
 }
 
 export function scoreTone(score: number): 'top' | 'good' | 'meh' | 'low' {

@@ -18,11 +18,16 @@ export function useRemote<T>(load: () => Promise<T>, subscribe?: (listener: (val
 
   useEffect(() => {
     let isActive = true
+    // Se um evento chegar antes da carga inicial, ele é mais novo: a carga é descartada.
+    let hasEvent = false
     load().then(
-      (value) => isActive && setData(value),
+      (value) => isActive && !hasEvent && setData(value),
       (e: unknown) => isActive && setError(errorMessage(e))
     )
-    const unsubscribe = subscribe?.((value) => setData(value))
+    const unsubscribe = subscribe?.((value) => {
+      hasEvent = true
+      setData(value)
+    })
     return () => {
       isActive = false
       unsubscribe?.()

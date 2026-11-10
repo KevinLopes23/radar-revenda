@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { brl, errorMessage, parseMoney, platformName, timeAgo } from './format'
+import { DEFAULT_SETTINGS } from '../../../main/data/validation'
+import { brl, errorMessage, netSaleProfit, parseMoney, platformName, timeAgo } from './format'
 
 describe('brl', () => {
   it('formats Brazilian currency', () => {
@@ -49,6 +50,23 @@ describe('errorMessage', () => {
     expect(errorMessage(new Error("Error invoking remote method 'searches:create': Error: Digite pelo menos 2 letras"))).toBe(
       'Digite pelo menos 2 letras'
     )
+  })
+})
+
+describe('netSaleProfit', () => {
+  const base = { id: '1', title: 'x', platformId: 'facebook', paidPrice: 1000, listingUrl: null, opportunityId: null, notes: '', boughtAt: '2026-11-10T00:00:00.000Z', soldAt: null } as const
+  const fees = { ...DEFAULT_SETTINGS.fees, mercadolivre: { percent: 10, fixed: 5, shipping: 20 } }
+
+  it('returns null while not sold', () => {
+    expect(netSaleProfit({ ...base, soldPrice: null, soldChannel: null }, fees)).toBeNull()
+  })
+
+  it('subtracts the fees of the sale channel', () => {
+    expect(netSaleProfit({ ...base, soldPrice: 1500, soldChannel: 'mercadolivre' }, fees)).toBe(325)
+  })
+
+  it('works without fees loaded', () => {
+    expect(netSaleProfit({ ...base, soldPrice: 1500, soldChannel: 'olx' }, null)).toBe(500)
   })
 })
 

@@ -83,7 +83,8 @@ export function heuristicProductQuery(title: string): string {
 }
 
 const USED_PATTERN = /\b(semi ?novo|semi ?nova|usad[oa]|marcas de uso|com uso|como novo|estado de novo|igual novo|tipo novo)\b/
-const NEW_PATTERN = /\b(lacrad[oa]|nunca usad[oa]|novo na caixa|zero|novo|nova)\b/
+// Só sinais fortes: "bateria nova" ou "tela nova" não fazem o produto ser novo.
+const NEW_PATTERN = /\b(lacrad[oa]|nunca usad[oa]|nov[oa] na caixa|sem uso|nov[oa] lacrad[oa])\b/
 
 export function detectCondition(text: string): ListingCondition {
   const normalized = normalizeText(text)

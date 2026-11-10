@@ -35,6 +35,7 @@ export class ScanService {
   private status: ScanStatus = IDLE
   private cancelRequested = false
   private timer: NodeJS.Timeout | null = null
+  private disposed = false
 
   constructor(private readonly deps: ScanDeps) {}
 
@@ -44,7 +45,7 @@ export class ScanService {
 
   /** Inicia uma rodada (todas as buscas ativas ou só uma). Retorna na hora; o progresso vem por eventos. */
   start(searchId: string | null): ScanStatus {
-    if (this.status.running) return this.status
+    if (this.status.running || this.disposed) return this.status
     this.cancelRequested = false
     this.update({ running: true, message: 'Iniciando varredura...', startedAt: new Date().toISOString(), finishedAt: null, log: [] })
     void this.runRound(searchId)
@@ -63,6 +64,7 @@ export class ScanService {
   reschedule(): void {
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
+    if (this.disposed) return
     const { autoEnabled, intervalMinutes } = this.deps.settings.get().scan
     if (!autoEnabled) {
       this.update({ nextRunAt: null })
@@ -77,12 +79,13 @@ export class ScanService {
   }
 
   dispose(): void {
+    this.disposed = true
     this.cancelRequested = true
     if (this.timer) clearTimeout(this.timer)
+    this.timer = null
   }
 
   private async runRound(searchId: string | null): Promise<void> {
-    const browserWasOpen = this.deps.browser.isOpen()
     const searches = this.deps.searches.list().filter((s) => (searchId ? s.id === searchId : s.active))
     let found = 0
     try {
@@ -95,7 +98,8 @@ export class ScanService {
       if (error instanceof CancelledError) this.finish('Varredura interrompida.')
       else this.finish(`Erro: ${error instanceof Error ? error.message : String(error)}`, 'erro')
     } finally {
-      if (!browserWasOpen) await this.deps.browser.close().catch(() => undefined)
+      // Fecha o Chrome só se ninguém abriu a janela para fazer login durante a rodada.
+      await this.deps.browser.releaseAfterScan().catch(() => undefined)
       this.reschedule()
     }
   }
@@ -114,10 +118,15 @@ export class ScanService {
     const references = await this.newPriceReferences(search, settings)
     const known = this.deps.opportunities.knownIds()
     const fresh = inRange.filter((l) => !known.has(l.id)).slice(0, settings.scan.maxAnalysesPerRun)
-    const created = await this.analyzeAll(fresh, pool, references, search, settings)
-    this.deps.opportunities.addMany(created)
-    this.deps.searches.markRun(search.id, new Date().toISOString())
-    if (created.length > 0) this.deps.onNewOpportunities(created)
+    const created: Opportunity[] = []
+    try {
+      await this.analyzeAll(fresh, pool, references, search, settings, created)
+    } finally {
+      // Mesmo se a rodada for interrompida, o que já foi analisado é salvo.
+      this.deps.opportunities.addMany(created)
+      this.deps.searches.markRun(search.id, new Date().toISOString())
+      if (created.length > 0) this.deps.onNewOpportunities(created)
+    }
     this.log('ok', `"${search.query}": ${pool.length} anúncio(s) lidos, ${created.length} novo(s) analisado(s).`)
     return created.length
   }
@@ -175,10 +184,10 @@ export class ScanService {
     pool: readonly Listing[],
     references: readonly Comparable[],
     search: SavedSearch,
-    settings: Settings
-  ): Promise<Opportunity[]> {
+    settings: Settings,
+    created: Opportunity[]
+  ): Promise<void> {
     let gemini = this.createGemini(settings)
-    const created: Opportunity[] = []
     for (const [index, listing] of fresh.entries()) {
       this.checkCancel()
       this.update({ message: `Analisando ${index + 1}/${fresh.length}: ${listing.title}` })
@@ -188,7 +197,6 @@ export class ScanService {
       const analysis = analyzeListing({ listing, pool, newReferences: references, identification, settings })
       created.push({ id: listing.id, searchId: search.id, listing, analysis, status: 'nova', foundAt: new Date().toISOString() })
     }
-    return created
   }
 
   private createGemini(settings: Settings): GeminiClient | null {

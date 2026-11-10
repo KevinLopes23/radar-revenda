@@ -4,7 +4,7 @@ import type { Analysis, Comparable, Flag, Listing, ListingCondition, Settings } 
 import { estimateResalePrice, marketPrices } from './pricing'
 import { computeChannels, scoreOpportunity } from './profit'
 import { detectFlags } from './risks'
-import { detectCondition, heuristicProductQuery, isAccessoryTitle, isComparable } from './text'
+import { detectCondition, heuristicProductQuery, isAccessoryTitle, isComparable, tokenize } from './text'
 
 export interface ProductIdentification {
   readonly productName: string
@@ -68,7 +68,22 @@ function buildFlags(input: AnalyzeInput, marketPrice: number | null, comparables
   return [...flags, ...aiFlags, ...accessoryFlag].filter((f) => !seen.has(f.text) && Boolean(seen.add(f.text)))
 }
 
-export function analyzeListing(input: AnalyzeInput): Analysis {
+const LINK_PATTERN = /https?:\/\/|www\.|\.com\b|\.br\b/i
+
+/**
+ * A resposta da IA é tratada como não confiável (o texto do anúncio pode tentar manipulá-la):
+ * se a busca sugerida não tem nada a ver com o título, a IA é ignorada; riscos com links são descartados.
+ */
+export function trustedIdentification(identification: ProductIdentification | null, title: string): ProductIdentification | null {
+  if (!identification) return null
+  const titleTokens = new Set(tokenize(title))
+  const overlaps = tokenize(identification.productQuery).some((t) => titleTokens.has(t))
+  if (!overlaps) return null
+  return { ...identification, risks: identification.risks.filter((r) => !LINK_PATTERN.test(r)).slice(0, 4) }
+}
+
+export function analyzeListing(rawInput: AnalyzeInput): Analysis {
+  const input = { ...rawInput, identification: trustedIdentification(rawInput.identification, rawInput.listing.title) }
   const { listing, identification, settings } = input
   const productQuery = identification?.productQuery || heuristicProductQuery(listing.title)
   const condition = resolveCondition(input)

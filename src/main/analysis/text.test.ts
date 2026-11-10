@@ -87,6 +87,10 @@ describe('detectCondition', () => {
     expect(detectCondition('iPhone 13 seminovo')).toBe('usado')
   })
 
+  it('does not treat a new part as a new product', () => {
+    expect(detectCondition('iPhone 11 com bateria nova e tela nova')).toBe('desconhecido')
+  })
+
   it('returns unknown when there is no hint', () => {
     expect(detectCondition('iPhone 13 128GB')).toBe('desconhecido')
   })

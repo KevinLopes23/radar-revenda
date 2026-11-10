@@ -67,6 +67,29 @@ describe('analyzeListing', () => {
     expect(withAi.flags.some((f) => f.text.includes('Bateria'))).toBe(true)
   })
 
+  it('ignores an AI product query that has nothing to do with the listing title', () => {
+    const tricked = analyzeListing({
+      listing: target,
+      pool,
+      newReferences: newRefs,
+      identification: { productName: 'MacBook Pro', productQuery: 'macbook pro m3', condition: 'usado', isAccessory: false, risks: [] },
+      settings: DEFAULT_SETTINGS
+    })
+    expect(tricked.productQuery).toBe('iphone 13 128gb')
+  })
+
+  it('drops AI risks that contain links', () => {
+    const result = analyzeListing({
+      listing: target,
+      pool,
+      newReferences: newRefs,
+      identification: { productName: 'iPhone 13', productQuery: 'iphone 13 128gb', condition: 'usado', isAccessory: false, risks: ['Veja https://golpe.com', 'Sem nota'] },
+      settings: DEFAULT_SETTINGS
+    })
+    expect(result.flags.some((f) => f.text.includes('golpe.com'))).toBe(false)
+    expect(result.flags.some((f) => f.text === 'Sem nota')).toBe(true)
+  })
+
   it('returns zero score and no channels without market reference', () => {
     const lonely = listing('Produto muito raro xyz', 100)
     const result = analyzeListing({ listing: lonely, pool: [lonely], newReferences: [], identification: null, settings: DEFAULT_SETTINGS })

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -30,10 +30,19 @@ describe('JsonFile', () => {
     expect(file.read()).toEqual([1, 2, 3])
   })
 
-  it('returns the fallback for corrupted content', () => {
+  it('returns the fallback for corrupted content and keeps a backup of it', () => {
     const { file, path } = makeFile()
     writeFileSync(path, 'not json')
     expect(file.read()).toEqual([])
+    expect(readdirSync(dir).some((name) => name.startsWith('data.json.corrompido-'))).toBe(true)
+  })
+
+  it('throws instead of returning the fallback when the file cannot be read', () => {
+    const { path } = makeFile()
+    mkdirSync(path) // um diretório no lugar do arquivo provoca erro de leitura (EISDIR)
+    const file = new JsonFile(path, parseNumbers, () => [])
+    expect(() => file.read()).toThrow(/Não foi possível ler/)
+    expect(() => file.update((c) => [...c, 1])).toThrow()
   })
 
   it('applies the parser to sanitize stored data', () => {

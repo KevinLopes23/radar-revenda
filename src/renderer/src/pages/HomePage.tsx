@@ -2,7 +2,7 @@ import { PLATFORMS } from '../../../shared/platforms'
 import type { Opportunity } from '../../../shared/types'
 import type { UseAccounts } from '../hooks/useAccounts'
 import { useRemote } from '../hooks/useRemote'
-import { brl, platformName, scoreTone } from '../lib/format'
+import { brl, netSaleProfit, platformName, scoreTone } from '../lib/format'
 
 type PageTarget = 'varredura' | 'oportunidades' | 'configuracoes'
 
@@ -19,6 +19,7 @@ const isOpen = (o: Opportunity): boolean => o.status === 'nova' || o.status === 
 export function HomePage({ accounts, onNavigate }: Props) {
   const opps = useRemote(() => window.radar.opportunities.list(), (l) => window.radar.opportunities.onChange(l))
   const purchases = useRemote(() => window.radar.purchases.list())
+  const settings = useRemote(() => window.radar.settings.get())
 
   const connectable = PLATFORMS.filter((p) => p.connectable)
   const isConnected = (id: string): boolean => accounts.accounts.find((s) => s.platformId === id)?.status === 'conectado'
@@ -28,7 +29,8 @@ export function HomePage({ accounts, onNavigate }: Props) {
   const today = open.filter((o) => Date.now() - Date.parse(o.foundAt) < DAY_MS)
   const top = [...open].sort((a, b) => b.analysis.score - a.analysis.score).slice(0, TOP_COUNT)
   const potential = top.reduce((sum, o) => sum + Math.max(0, o.analysis.bestProfit ?? 0), 0)
-  const realized = (purchases.data ?? []).reduce((sum, p) => sum + (p.soldPrice === null ? 0 : p.soldPrice - p.paidPrice), 0)
+  const fees = settings.data?.fees ?? null
+  const realized = (purchases.data ?? []).reduce((sum, p) => sum + (netSaleProfit(p, fees) ?? 0), 0)
 
   return (
     <div className="page page--wide">

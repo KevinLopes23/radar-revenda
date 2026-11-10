@@ -10,10 +10,12 @@ const IN_PROGRESS: ReadonlySet<AccountStatus> = new Set(['abrindo', 'aguardando-
 
 type ChangeListener = (states: readonly AccountState[]) => void
 
+/** Acompanhamento de um login em andamento (um por plataforma). */
 interface LoginPolling {
-  readonly platformId: PlatformId
   readonly timer: NodeJS.Timeout
   readonly deadline: number
+  /** Evita acumular verificações enquanto a anterior ainda espera o navegador. */
+  inFlight: boolean
 }
 
 const nowSeconds = (): number => Date.now() / 1000
@@ -27,7 +29,7 @@ function savedMessage(platform: Platform, status: SavedStatus): string {
 /** Mantém o estado das contas conectadas em cada plataforma. */
 export class AccountsService {
   private states: ReadonlyMap<PlatformId, AccountState>
-  private polling: LoginPolling | null = null
+  private readonly pollings = new Map<PlatformId, LoginPolling>()
 
   constructor(
     private readonly browser: BrowserManager,
@@ -42,19 +44,20 @@ export class AccountsService {
     return PLATFORMS.map((p) => this.states.get(p.id) ?? this.buildState(p.id, 'verificando', ''))
   }
 
-  /** Recalcula o status de todas as plataformas a partir do perfil salvo. */
+  /** Recalcula o status das plataformas a partir do perfil salvo (logins em andamento não são tocados). */
   async refresh(): Promise<readonly AccountState[]> {
+    const idle = (): Platform[] => PLATFORMS.filter((p) => !IN_PROGRESS.has(this.statusOf(p.id)))
     try {
       const cookies = await this.browser.readCookies()
       const confirmations = this.store.load()
-      const updates = PLATFORMS.filter((p) => !IN_PROGRESS.has(this.statusOf(p.id))).map((p) => {
+      const updates = idle().map((p) => {
         const status = resolveSavedStatus(p, cookies, confirmations[p.id], nowSeconds())
         return this.buildState(p.id, status, savedMessage(p, status))
       })
       return this.apply(updates)
     } catch (error) {
       const message = browserErrorMessage(error)
-      return this.apply(PLATFORMS.filter((p) => p.connectable).map((p) => this.buildState(p.id, 'erro', message)))
+      return this.apply(idle().filter((p) => p.connectable).map((p) => this.buildState(p.id, 'erro', message)))
     }
   }
 
@@ -94,7 +97,7 @@ export class AccountsService {
   async disconnect(platformId: PlatformId): Promise<readonly AccountState[]> {
     const platform = getPlatform(platformId)
     if (!platform.connectable) return this.list()
-    if (this.polling?.platformId === platformId) this.stopPolling()
+    this.stopPolling(platformId)
     try {
       await this.browser.clearCookies(platform.cookieDomain)
       const { [platformId]: _removed, ...rest } = this.store.load()
@@ -106,19 +109,19 @@ export class AccountsService {
   }
 
   async closeBrowser(): Promise<readonly AccountState[]> {
-    this.stopPolling()
+    this.stopAllPolling()
     await this.browser.close()
     return this.resetInProgressAndRefresh()
   }
 
-  /** Chamado quando o usuário fecha a janela do Chrome manualmente. */
+  /** Chamado quando a janela do Chrome é fechada (pelo usuário ou ao fim de uma varredura). */
   handleBrowserClosed(): void {
-    this.stopPolling()
+    this.stopAllPolling()
     void this.resetInProgressAndRefresh()
   }
 
   dispose(): void {
-    this.stopPolling()
+    this.stopAllPolling()
   }
 
   private async resetInProgressAndRefresh(): Promise<readonly AccountState[]> {
@@ -128,34 +131,45 @@ export class AccountsService {
   }
 
   private startPolling(platformId: PlatformId): void {
-    this.stopPolling()
+    this.stopPolling(platformId)
     const timer = setInterval(() => void this.pollLogin(platformId), LOGIN_POLL_INTERVAL_MS)
-    this.polling = { platformId, timer, deadline: Date.now() + LOGIN_TIMEOUT_MS }
+    this.pollings.set(platformId, { timer, deadline: Date.now() + LOGIN_TIMEOUT_MS, inFlight: false })
   }
 
-  private stopPolling(): void {
-    if (this.polling) clearInterval(this.polling.timer)
-    this.polling = null
+  private stopPolling(platformId: PlatformId): void {
+    const polling = this.pollings.get(platformId)
+    if (polling) clearInterval(polling.timer)
+    this.pollings.delete(platformId)
+  }
+
+  private stopAllPolling(): void {
+    ;[...this.pollings.keys()].forEach((id) => this.stopPolling(id))
   }
 
   private async pollLogin(platformId: PlatformId): Promise<void> {
     const platform = getPlatform(platformId)
-    const polling = this.polling
-    if (!polling || polling.platformId !== platformId || !platform.sessionCookies) return
+    const polling = this.pollings.get(platformId)
+    if (!polling || polling.inFlight || !platform.sessionCookies) return
+    polling.inFlight = true
     try {
       const cookies = await this.browser.readCookies()
+      // O login pode ter sido cancelado/reiniciado enquanto esperávamos o navegador.
+      if (this.pollings.get(platformId) !== polling) return
       const loggedIn = hasSessionCookies(cookies, platform.sessionCookies, platform.cookieDomain, nowSeconds())
       const inCheckpoint = platformId === 'facebook' && this.browser.pageUrls().some(isCheckpointUrl)
       if (loggedIn && !inCheckpoint) {
-        this.stopPolling()
+        this.stopPolling(platformId)
         this.set(platformId, 'conectado', 'Conta conectada. Pode fechar ou deixar o navegador aberto.')
       } else if (Date.now() > polling.deadline) {
-        this.stopPolling()
+        this.stopPolling(platformId)
         this.set(platformId, 'erro', 'Tempo de login esgotado. Clique em "Conectar" para tentar de novo.')
       }
     } catch (error) {
-      this.stopPolling()
+      if (this.pollings.get(platformId) !== polling) return
+      this.stopPolling(platformId)
       this.set(platformId, 'erro', browserErrorMessage(error))
+    } finally {
+      polling.inFlight = false
     }
   }
 

@@ -1,24 +1,28 @@
 import { useState, type FormEvent } from 'react'
 import { PLATFORMS, type PlatformId } from '../../../shared/platforms'
-import type { Purchase } from '../../../shared/types'
+import type { ChannelFee, Purchase } from '../../../shared/types'
 import { Modal } from '../components/Modal'
 import { useRemote } from '../hooks/useRemote'
-import { brl, errorMessage, parseMoney, platformName } from '../lib/format'
+import { brl, errorMessage, netSaleProfit, parseMoney, platformName } from '../lib/format'
 
 const RESALE_PLATFORMS = PLATFORMS.filter((p) => p.roles.revenda)
 const BUY_PLATFORMS = PLATFORMS.filter((p) => p.roles.buscaOfertas)
 
-function summarize(items: readonly Purchase[]): { invested: number; sold: number; profit: number; inStock: number } {
+type Fees = Readonly<Record<PlatformId, ChannelFee>> | null
+
+function summarize(items: readonly Purchase[], fees: Fees): { invested: number; sold: number; profit: number; inStock: number } {
   const sold = items.filter((p) => p.soldPrice !== null)
   return {
     invested: items.reduce((sum, p) => sum + p.paidPrice, 0),
     sold: sold.reduce((sum, p) => sum + (p.soldPrice ?? 0), 0),
-    profit: sold.reduce((sum, p) => sum + (p.soldPrice ?? 0) - p.paidPrice, 0),
+    profit: sold.reduce((sum, p) => sum + (netSaleProfit(p, fees) ?? 0), 0),
     inStock: items.length - sold.length
   }
 }
 
-function SellForm({ purchase, onDone }: { purchase: Purchase; onDone: (price: number, channel: PlatformId) => void }) {
+type SellFormProps = { purchase: Purchase; isBusy: boolean; onDone: (price: number, channel: PlatformId) => void }
+
+function SellForm({ purchase, isBusy, onDone }: SellFormProps) {
   const [price, setPrice] = useState('')
   const [channel, setChannel] = useState<PlatformId>('facebook')
   const handle = (e: FormEvent): void => {
@@ -48,7 +52,7 @@ function SellForm({ purchase, onDone }: { purchase: Purchase; onDone: (price: nu
         </label>
       </div>
       <div className="form__actions">
-        <button type="submit" className="btn btn--primary" disabled={parseMoney(price) === null}>
+        <button type="submit" className="btn btn--primary" disabled={isBusy || parseMoney(price) === null}>
           Registrar venda
         </button>
       </div>
@@ -56,7 +60,7 @@ function SellForm({ purchase, onDone }: { purchase: Purchase; onDone: (price: nu
   )
 }
 
-function AddForm({ onDone }: { onDone: (title: string, price: number, platform: PlatformId) => void }) {
+function AddForm({ isBusy, onDone }: { isBusy: boolean; onDone: (title: string, price: number, platform: PlatformId) => void }) {
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('')
   const [platform, setPlatform] = useState<PlatformId>('facebook')
@@ -88,7 +92,7 @@ function AddForm({ onDone }: { onDone: (title: string, price: number, platform: 
         </label>
       </div>
       <div className="form__actions">
-        <button type="submit" className="btn btn--primary">
+        <button type="submit" className="btn btn--primary" disabled={isBusy}>
           Adicionar
         </button>
       </div>
@@ -98,10 +102,12 @@ function AddForm({ onDone }: { onDone: (title: string, price: number, platform: 
 
 export function HistoryPage() {
   const purchases = useRemote(() => window.radar.purchases.list())
+  const settings = useRemote(() => window.radar.settings.get())
   const [selling, setSelling] = useState<Purchase | null>(null)
   const [isAdding, setAdding] = useState(false)
   const items = purchases.data ?? []
-  const totals = summarize(items)
+  const fees = settings.data?.fees ?? null
+  const totals = summarize(items, fees)
 
   const sell = async (price: number, channel: PlatformId): Promise<void> => {
     if (!selling) return
@@ -143,7 +149,7 @@ export function HistoryPage() {
         </div>
         <div className="stat stat--wide">
           <span className={`stat__value stat__value--sm ${totals.profit >= 0 ? 'is-profit' : 'is-loss'}`}>{brl(totals.profit)}</span>
-          <span className="stat__label">lucro realizado</span>
+          <span className="stat__label">lucro realizado (após taxas)</span>
         </div>
         <div className="stat">
           <span className="stat__value stat__value--sm">{totals.inStock}</span>
@@ -171,7 +177,7 @@ export function HistoryPage() {
           </thead>
           <tbody>
             {items.map((p) => {
-              const profit = p.soldPrice === null ? null : p.soldPrice - p.paidPrice
+              const profit = netSaleProfit(p, fees)
               return (
                 <tr key={p.id}>
                   <td>
@@ -207,10 +213,10 @@ export function HistoryPage() {
       )}
 
       <Modal title="Registrar venda" isOpen={selling !== null} onClose={() => setSelling(null)}>
-        {selling && <SellForm purchase={selling} onDone={(price, channel) => void sell(price, channel)} />}
+        {selling && <SellForm purchase={selling} isBusy={purchases.isBusy} onDone={(price, channel) => void sell(price, channel)} />}
       </Modal>
       <Modal title="Adicionar compra" isOpen={isAdding} onClose={() => setAdding(false)}>
-        <AddForm onDone={(title, price, platform) => void add(title, price, platform)} />
+        <AddForm isBusy={purchases.isBusy} onDone={(title, price, platform) => void add(title, price, platform)} />
       </Modal>
     </div>
   )

@@ -1,9 +1,10 @@
 /** Lê os cards de anúncio de uma página de busca, de forma genérica e com ritmo humano. */
 import type { Page } from 'playwright-core'
+import { z } from 'zod'
 import type { PlatformId } from '../../shared/platforms'
 import type { Listing } from '../../shared/types'
 import { parseCard, type RawCard } from './extract'
-import { detectBlock, itemUrlPattern } from './sources'
+import { detectBlock, isTrustedItemUrl, itemUrlPattern } from './sources'
 
 const NAVIGATION_TIMEOUT_MS = 45_000
 const SCROLL_ROUNDS = 3
@@ -48,6 +49,24 @@ const COLLECT_CARDS = `(args) => {
   return cards;
 }`
 
+const MAX_CARDS = 200
+const rawCardSchema = z.object({
+  url: z.string().max(2048),
+  text: z.string().max(2000),
+  image: z.string().max(4096).nullable()
+})
+
+/** O resultado vem de uma página de terceiros: valida formato, tamanho e domínio de cada card. */
+function validCards(raw: unknown, platformId: PlatformId): RawCard[] {
+  if (!Array.isArray(raw)) return []
+  return raw.slice(0, MAX_CARDS).flatMap((item) => {
+    const parsed = rawCardSchema.safeParse(item)
+    if (!parsed.success || !isTrustedItemUrl(platformId, parsed.data.url)) return []
+    const image = parsed.data.image?.startsWith('https://') ? parsed.data.image : null
+    return [{ ...parsed.data, image }]
+  })
+}
+
 async function assertNotBlocked(page: Page): Promise<void> {
   const reason = detectBlock(page.url(), await page.title().catch(() => ''))
   if (reason) throw new BlockedError(reason)
@@ -71,9 +90,11 @@ export async function scrapeSearchPage(page: Page, options: ScrapeOptions): Prom
   }
   await assertNotBlocked(page)
 
-  const raw = (await page.evaluate(`(${COLLECT_CARDS})(${JSON.stringify({ pattern: itemUrlPattern(options.platformId), max: options.max * 2 })})`)) as RawCard[]
+  const raw: unknown = await page.evaluate(
+    `(${COLLECT_CARDS})(${JSON.stringify({ pattern: itemUrlPattern(options.platformId), max: options.max * 2 })})`
+  )
   const seen = new Set<string>()
-  return raw
+  return validCards(raw, options.platformId)
     .map((card) => parseCard(card, options.platformId, options.query))
     .filter((l): l is Listing => l !== null && !seen.has(l.id) && Boolean(seen.add(l.id)))
     .slice(0, options.max)

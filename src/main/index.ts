@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Notification, shell } from 'electron'
+import { app, BrowserWindow, Notification, session } from 'electron'
 import { join } from 'node:path'
 import { IPC } from '../shared/ipc'
 import type { Opportunity, Purchase, SavedSearch, Settings } from '../shared/types'
@@ -99,16 +99,17 @@ function createWindow(): BrowserWindow {
   })
 
   window.once('ready-to-show', () => window.show())
+  // A janela do app nunca navega para fora nem abre pop-ups; links vão pelo IPC (com allowlist).
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  const devServerUrl = !app.isPackaged ? process.env['ELECTRON_RENDERER_URL'] : undefined
+  const devOrigin = devServerUrl ? new URL(devServerUrl).origin : null
   window.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith('http://localhost')) {
-      event.preventDefault()
-      if (url.startsWith('https://')) void shell.openExternal(url)
-    }
+    const isDevReload = devOrigin !== null && URL.canParse(url) && new URL(url).origin === devOrigin
+    if (!isDevReload) event.preventDefault()
   })
+  window.webContents.on('will-attach-webview', (event) => event.preventDefault())
 
-  const devServerUrl = process.env['ELECTRON_RENDERER_URL']
-  if (!app.isPackaged && devServerUrl) {
+  if (devServerUrl) {
     void window.loadURL(devServerUrl)
   } else {
     void window.loadFile(join(__dirname, '../renderer/index.html'))
@@ -119,6 +120,9 @@ function createWindow(): BrowserWindow {
 app.setAppUserModelId('br.kevma.radar-revenda')
 
 app.whenReady().then(() => {
+  // O app não precisa de câmera, microfone, localização, notificações web etc.
+  session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
+  session.defaultSession.setPermissionCheckHandler(() => false)
   registerIpc({
     accounts,
     settings,
@@ -143,5 +147,5 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   accounts.dispose()
   scan.dispose()
-  void browser.close().finally(() => app.quit())
+  void browser.dispose().finally(() => app.quit())
 })

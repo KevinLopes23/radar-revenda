@@ -34,6 +34,7 @@ export function OpportunitiesPage() {
   const [selected, setSelected] = useState<Opportunity | null>(null)
   const [buying, setBuying] = useState<Opportunity | null>(null)
   const [paid, setPaid] = useState('')
+  const [isSaving, setSaving] = useState(false)
 
   const visible = useMemo(() => applyFilters(opps.data ?? [], status, minScore, platform, sort), [opps.data, status, minScore, platform, sort])
 
@@ -53,6 +54,8 @@ export function OpportunitiesPage() {
   const confirmBuy = async (): Promise<void> => {
     const price = parseMoney(paid)
     if (!buying || price === null) return opps.setError('Informe quanto você pagou.')
+    if (isSaving) return
+    setSaving(true)
     try {
       await window.radar.purchases.add({
         title: buying.analysis.productName,
@@ -62,10 +65,11 @@ export function OpportunitiesPage() {
         opportunityId: buying.id,
         notes: ''
       })
-      await opps.run(() => window.radar.opportunities.setStatus(buying.id, 'comprada'))
-      setBuying(null)
+      if (await opps.run(() => window.radar.opportunities.setStatus(buying.id, 'comprada'))) setBuying(null)
     } catch (e) {
       opps.setError(errorMessage(e))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -155,8 +159,8 @@ export function OpportunitiesPage() {
               <input autoFocus inputMode="decimal" value={paid} onChange={(e) => setPaid(e.target.value)} />
             </label>
             <div className="form__actions">
-              <button type="submit" className="btn btn--primary">
-                Salvar no histórico
+              <button type="submit" className="btn btn--primary" disabled={isSaving}>
+                {isSaving ? 'Salvando...' : 'Salvar no histórico'}
               </button>
             </div>
           </form>

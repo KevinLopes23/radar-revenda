@@ -1,5 +1,6 @@
 /** URLs de busca, padrões de link de anúncio e detecção de bloqueio por plataforma. */
-import type { PlatformId } from '../../shared/platforms'
+import { getPlatform, type PlatformId } from '../../shared/platforms'
+import { belongsToDomain } from '../accounts/loginStatus'
 import { normalizeText } from '../analysis/text'
 
 export interface SearchQuery {
@@ -71,6 +72,20 @@ const ITEM_URL: Readonly<Record<PlatformId, RegExp>> = {
 
 export function isItemUrl(platformId: PlatformId, url: string): boolean {
   return ITEM_URL[platformId].test(url)
+}
+
+/** Link de anúncio https no domínio da própria plataforma (descarta links disfarçados de outros sites). */
+export function isTrustedItemUrl(platformId: PlatformId, url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.protocol === 'https:' &&
+      belongsToDomain(parsed.hostname, getPlatform(platformId).cookieDomain) &&
+      isItemUrl(platformId, url)
+    )
+  } catch {
+    return false
+  }
 }
 
 /** Expressões (como string) para o filtro de links executado dentro da página. */

@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { buildSearchUrl, detectBlock, isItemUrl } from './sources'
+import { buildSearchUrl, detectBlock, isItemUrl, isTrustedItemUrl } from './sources'
+
+describe('isTrustedItemUrl', () => {
+  it('accepts https item links on the platform domain', () => {
+    expect(isTrustedItemUrl('olx', 'https://sp.olx.com.br/regiao-de-bauru/celulares/iphone-13-1234567890')).toBe(true)
+  })
+
+  it('rejects look-alike links on other domains', () => {
+    expect(isTrustedItemUrl('olx', 'https://evil.com/?x=olx.com.br/a-1234567')).toBe(false)
+    expect(isTrustedItemUrl('enjoei', 'https://enjoei.com.br.evil.com/p/iphone-13-150873410')).toBe(false)
+  })
+
+  it('rejects non-https links', () => {
+    expect(isTrustedItemUrl('enjoei', 'http://www.enjoei.com.br/p/iphone-13-150873410')).toBe(false)
+  })
+
+  it('rejects invalid urls', () => {
+    expect(isTrustedItemUrl('enjoei', 'nada')).toBe(false)
+  })
+})
 
 const query = { query: 'iphone 13', minPrice: 500, maxPrice: 2000 }
 

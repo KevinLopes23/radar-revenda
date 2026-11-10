@@ -73,6 +73,37 @@ describe('parseCard', () => {
     expect(listing).toMatchObject({ price: 4579, title: 'iPhone 13 128GB 4GB' })
   })
 
+  it('uses the current price, not the old price or the installment (Mercado Livre)', () => {
+    const listing = parseCard(
+      {
+        url: 'https://produto.mercadolivre.com.br/MLB-123456789-iphone-13',
+        text: 'R$ 3.999\nR$ 3.499\n10x R$ 349,90 sem juros\nFrete grátis acima de R$ 79\nApple iPhone 13 128GB',
+        image: null
+      },
+      'mercadolivre',
+      'iphone 13'
+    )
+    expect(listing?.price).toBe(3499)
+  })
+
+  it('handles two prices glued on one line (Facebook discount)', () => {
+    const listing = parseCard(
+      { url: 'https://www.facebook.com/marketplace/item/7/', text: 'R$1.500R$1.800\niPhone 13', image: null },
+      'facebook',
+      'iphone 13'
+    )
+    expect(listing?.price).toBe(1500)
+  })
+
+  it('limits the title length', () => {
+    const listing = parseCard(
+      { url: 'https://www.enjoei.com.br/p/x-1', text: `R$ 10\niphone ${'a'.repeat(500)}`, image: null },
+      'enjoei',
+      'iphone'
+    )
+    expect(listing?.title.length).toBeLessThanOrEqual(300)
+  })
+
   it('returns null when the card has no price', () => {
     expect(parseCard({ url: 'https://www.olx.com.br/d/x-1', text: 'Sem preço', image: null }, 'olx', 'x')).toBeNull()
   })
