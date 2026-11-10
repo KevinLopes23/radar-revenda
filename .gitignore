@@ -13,12 +13,12 @@ release/
 !.env.example
 
 # Dados locais do app (perfil do navegador com login, banco, logs)
-browser-profile/
-data/
+/browser-profile/
+/data/
 *.sqlite
 *.sqlite3
 *.db
-logs/
+/logs/
 *.log
 
 # Playwright
