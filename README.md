@@ -11,7 +11,7 @@ com lucro estimado por canal, nota de oportunidade e alertas de risco.
 
 - **Varredura automática** de buscas salvas (termo, raio em km, preço máximo, intervalo) via Playwright,
   com ritmo "humano" para proteger a conta.
-- **Identificação com IA** (Claude): modelo exato, capacidade, estado e sinais de golpe a partir do título,
+- **Identificação com IA** (Gemini): modelo exato, capacidade, estado e sinais de golpe a partir do título,
   descrição e fotos.
 - **Pesquisa de preços** em Mercado Livre, OLX e no próprio Marketplace (mediana de novos e usados).
 - **Cálculo de lucro por canal** (taxas configuráveis de cada plataforma + custos extras).
@@ -27,7 +27,7 @@ com lucro estimado por canal, nota de oportunidade e alertas de risco.
 |---|---|
 | App desktop | Electron + React + TypeScript (Vite) |
 | Automação | Playwright (Chrome com perfil próprio do app) |
-| IA | Claude API (`@anthropic-ai/sdk`) |
+| IA | Google Gemini API (`@google/genai`) |
 | Banco local | SQLite |
 | Instalador | electron-builder (.exe) |
 
@@ -52,7 +52,7 @@ mas **o risco de restrição da conta não é zero**. Use por sua conta e risco.
 > Instruções serão adicionadas na Etapa 1.
 
 ```bash
-cp .env.example .env   # preencha ANTHROPIC_API_KEY
+cp .env.example .env   # preencha GEMINI_API_KEY
 npm install
 npm run dev
 ```

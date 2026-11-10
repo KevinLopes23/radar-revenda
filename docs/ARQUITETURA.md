@@ -3,7 +3,7 @@
 ## Fluxo
 
 ```
-Busca salva ──► Varredura (Playwright) ──► Anúncio bruto ──► Identificação (Claude)
+Busca salva ──► Varredura (Playwright) ──► Anúncio bruto ──► Identificação (Gemini)
                                                                    │
         Painel ◄── Oportunidade (nota + lucro) ◄── Cálculo ◄── Pesquisa de preços
                                                               (ML · OLX · Marketplace)
