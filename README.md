@@ -7,6 +7,17 @@ produto de cada anúncio com IA, compara com o preço de mercado (incluindo o Bu
 > Foco inicial: **eletrônicos** (celulares, consoles, notebooks, peças de PC), com suporte a outras
 > categorias de alta liquidez (ferramentas elétricas, foto/vídeo, instrumentos, eletroportáteis de marca).
 
+## ⬇️ Download
+
+**[Baixar a versão mais recente para Windows](https://github.com/KevinLopes23/radar-revenda/releases/latest)** — arquivo `Achadao-Setup-<versão>.exe`.
+
+1. Baixe o instalador na página de Releases e execute.
+2. O Windows pode mostrar "O Windows protegeu o computador" (o instalador ainda não tem assinatura digital paga).
+   Clique em **Mais informações → Executar assim mesmo**.
+3. Requisitos: **Windows 10/11 64 bits** e **Google Chrome** instalado (o app usa o Chrome para ler os sites).
+4. Opcional, mas recomendado: uma chave gratuita do Gemini em [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+   para a identificação dos produtos por IA.
+
 ## ✨ Funcionalidades
 
 - **Contas conectadas** (aba Configurações): login manual em cada plataforma numa janela do Chrome do app;
@@ -72,7 +83,7 @@ Detalhes em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
 O Facebook Marketplace não possui API pública e a automação pode violar os Termos de Uso da Meta.
 O app usa limites conservadores (intervalos aleatórios, poucos anúncios por rodada, pausa em verificações),
-mas **o risco de restrição da conta não é zero**. Use por sua conta e risco. Uso pessoal.
+mas **o risco de restrição da conta não é zero**. Use por sua conta e risco; o app é fornecido "como está", sem garantias.
 
 ## 🔌 Plataformas
 
@@ -103,3 +114,7 @@ npm run dist       # gera o instalador em release/Achadao-Setup-<versão>.exe
 Os dados locais (perfil do navegador com as sessões, buscas, oportunidades, histórico e a chave do Gemini
 criptografada pelo Windows) ficam em `%APPDATA%\radar-revenda` (modo dev) ou `%APPDATA%\Achadão`
 (app instalado), nunca no repositório.
+
+## 📄 Licença
+
+[MIT](LICENSE) © 2026 Kevin Lopes. Projeto independente, sem vínculo com Meta, OLX, Mercado Livre, Enjoei, Shopee ou Buscapé.

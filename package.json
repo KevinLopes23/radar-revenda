@@ -5,7 +5,12 @@
   "description": "App desktop que analisa ofertas do Facebook Marketplace e calcula se vale a pena revender",
   "main": "./out/main/index.js",
   "author": "Kevin Lopes",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "homepage": "https://github.com/KevinLopes23/radar-revenda",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KevinLopes23/radar-revenda.git"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",

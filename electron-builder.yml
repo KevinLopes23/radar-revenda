@@ -1,6 +1,6 @@
 appId: br.kevma.achadao
 productName: Achadão
-copyright: Uso pessoal
+copyright: Copyright © 2026 Kevin Lopes (MIT)
 directories:
   output: release
   buildResources: build
