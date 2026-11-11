@@ -110,9 +110,11 @@ flowchart LR
     G --> H[Oportunidades<br/>+ notificação]
 ```
 
-- **Preço de mercado** = mediana dos usados do mesmo modelo; sem usados para comparar, usa 70% do preço de novo do Buscapé.
-- **Lucro por canal** = preço de mercado − desconto para vender rápido − comissão − taxa fixa − frete − preço pedido − custo extra.
-- **Nota** = margem (até 6) + lucro absoluto (até 2) + confiança na comparação (até 2) − riscos.
+- **Preço de mercado** = mediana dos usados do mesmo modelo, com a **faixa típica** (metade dos anúncios custa entre o 1º e o 3º quartil); sem usados para comparar, usa 70% do preço de novo do Buscapé. Preços de "novo" acima de 2,5× o usado são descartados (quase sempre é outro produto).
+- **Lucro por canal** = preço de mercado − desconto para vender rápido (padrão 12%, porque anúncio mostra preço pedido, não preço vendido) − comissão − taxa fixa − frete − preço pedido − custo extra.
+- **Pior caso** = o mesmo cálculo com o preço baixo da faixa. Se aí não sobra lucro, o app avisa para negociar antes de comprar.
+- **Liquidez** = quantos usados iguais estão à venda (8+ alta, 4–7 média, menos de 4 baixa = "revenda lenta").
+- **Nota** = margem (até 6) + lucro absoluto (até 2) + confiança na comparação (até 2) − liquidez baixa (1) − riscos.
 
 Detalhes técnicos em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
 
