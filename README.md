@@ -101,5 +101,5 @@ npm run dist       # gera o instalador em release/Achadao-Setup-<versão>.exe
 ```
 
 Os dados locais (perfil do navegador com as sessões, buscas, oportunidades, histórico e a chave do Gemini
-criptografada pelo Windows) ficam em `%APPDATA%\radar-revenda` (modo dev) ou `%APPDATA%\Radar Revenda`
+criptografada pelo Windows) ficam em `%APPDATA%\radar-revenda` (modo dev) ou `%APPDATA%\Achadão`
 (app instalado), nunca no repositório.
