@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import './styles.css'
 import './features.css'
+import './motion.css'
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Elemento #root não encontrado')

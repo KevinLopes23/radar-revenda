@@ -87,7 +87,7 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     ...WINDOW_SIZE,
     show: false,
-    title: 'Radar Revenda',
+    title: 'Achadão',
     backgroundColor: BACKGROUND_COLOR,
     autoHideMenuBar: true,
     webPreferences: {
@@ -117,7 +117,7 @@ function createWindow(): BrowserWindow {
   return window
 }
 
-app.setAppUserModelId('br.kevma.radar-revenda')
+app.setAppUserModelId('br.kevma.achadao')
 
 app.whenReady().then(() => {
   // O app não precisa de câmera, microfone, localização, notificações web etc.

@@ -22,7 +22,7 @@ export function SettingsPage({ accounts }: Props) {
         <p className="eyebrow">Configurações</p>
         <h1>Contas conectadas</h1>
         <p className="page__lead">
-          Conecte suas contas para o Radar buscar ofertas e comparar preços em cada plataforma.{' '}
+          Conecte suas contas para o Achadão buscar ofertas e comparar preços em cada plataforma.{' '}
           <strong>
             {connectedCount} de {connectable.length}
           </strong>{' '}
@@ -33,7 +33,7 @@ export function SettingsPage({ accounts }: Props) {
       <aside className="notice">
         <Icon name="shield" size={22} />
         <p>
-          O login é feito por você, numa janela do Chrome do próprio app. O Radar <strong>nunca vê nem guarda sua senha</strong>; a
+          O login é feito por você, numa janela do Chrome do próprio app. O Achadão <strong>nunca vê nem guarda sua senha</strong>; a
           sessão fica salva só neste computador e pode ser apagada em &quot;Desconectar&quot;. Se um site pedir verificação
           (&quot;não sou um robô&quot;), clique em Conectar/Abrir site e resolva por lá.
         </p>

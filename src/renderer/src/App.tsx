@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react'
+import { AmbientBackground } from './components/AmbientBackground'
 import { Icon, type IconName } from './components/Icon'
+import { Logo } from './components/Logo'
 import { useAccounts } from './hooks/useAccounts'
 import { HistoryPage } from './pages/HistoryPage'
 import { HomePage } from './pages/HomePage'
@@ -48,13 +50,12 @@ export function App() {
 
   return (
     <div className="shell">
+      <AmbientBackground />
       <nav className="sidebar" aria-label="Navegação principal">
         <div className="brand">
-          <span className="brand__mark">
-            <Icon name="radar" size={20} />
-          </span>
+          <Logo size={38} />
           <span className="brand__name">
-            Radar<b>Revenda</b>
+            Achad<b>ão</b>
           </span>
         </div>
         <ul className="nav">
@@ -74,7 +75,11 @@ export function App() {
         </ul>
         <p className="sidebar__foot">{version && `v${version}`}</p>
       </nav>
-      <main className="content">{content}</main>
+      <main className="content">
+        <div key={page} className="page-enter">
+          {content}
+        </div>
+      </main>
     </div>
   )
 }

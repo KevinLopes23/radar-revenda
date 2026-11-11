@@ -21,7 +21,7 @@ export function ScanStatusPanel({ status, onStartAll, onStop }: Props) {
       <div className="scan-panel__head">
         <div className="scan-panel__radar" aria-hidden="true" />
         <div className="scan-panel__info">
-          <strong>{isRunning ? 'Varrendo agora' : 'Radar parado'}</strong>
+          <strong>{isRunning ? 'Varrendo agora' : 'Achadão em pausa'}</strong>
           <span>{status?.message ?? '—'}</span>
           <small className="muted">
             {status?.finishedAt && `Última rodada ${timeAgo(status.finishedAt)}`}

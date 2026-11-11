@@ -1,15 +1,25 @@
+import type { MouseEvent } from 'react'
 import type { Opportunity } from '../../../shared/types'
 import { brl, platformName, scoreTone, timeAgo } from '../lib/format'
 
 type Props = {
   opportunity: Opportunity
+  /** Posição na lista (para a animação de entrada em cascata). */
+  index: number
   onDetails: (o: Opportunity) => void
   onOpen: (url: string) => void
   onDiscard: (o: Opportunity) => void
   onBuy: (o: Opportunity) => void
 }
 
-export function OpportunityCard({ opportunity, onDetails, onOpen, onDiscard, onBuy }: Props) {
+/** Luz que acompanha o mouse dentro do card. */
+function trackPointer(e: MouseEvent<HTMLElement>): void {
+  const rect = e.currentTarget.getBoundingClientRect()
+  e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+  e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`)
+}
+
+export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDiscard, onBuy }: Props) {
   const { listing, analysis, status } = opportunity
   const tone = scoreTone(analysis.score)
   const highRisks = analysis.flags.filter((f) => f.level === 'alto').length
@@ -17,7 +27,11 @@ export function OpportunityCard({ opportunity, onDetails, onOpen, onDiscard, onB
   const isDone = status === 'descartada' || status === 'comprada'
 
   return (
-    <article className={`opp${isDone ? ' opp--done' : ''}`}>
+    <article
+      className={`opp spotlight${isDone ? ' opp--done' : ''}`}
+      style={{ ['--i' as string]: index }}
+      onMouseMove={trackPointer}
+    >
       <button type="button" className="opp__media" onClick={() => onDetails(opportunity)} aria-label={`Detalhes de ${listing.title}`}>
         {listing.image ? <img src={listing.image} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span>sem foto</span>}
         <span className={`score score--${tone}`} title="Nota da oportunidade">
@@ -45,7 +59,7 @@ export function OpportunityCard({ opportunity, onDetails, onOpen, onDiscard, onB
             <dd>{brl(analysis.marketUsedPrice ?? analysis.marketNewPrice)}</dd>
           </div>
           <div className={analysis.bestProfit !== null && analysis.bestProfit > 0 ? 'is-profit' : 'is-loss'}>
-            <dt>Lucro {analysis.bestChannel ? `(${platformName(analysis.bestChannel)})` : ''}</dt>
+            <dt>Lucro{analysis.bestChannel ? ` · vendendo na ${platformName(analysis.bestChannel).replace(' Marketplace', '')}` : ''}</dt>
             <dd>{brl(analysis.bestProfit)}</dd>
           </div>
         </dl>

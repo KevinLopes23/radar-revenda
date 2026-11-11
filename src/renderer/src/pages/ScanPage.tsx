@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AccountState } from '../../../shared/ipc'
 import type { SavedSearch, SearchInput } from '../../../shared/types'
 import { Modal } from '../components/Modal'
+import { ProductArt } from '../components/ProductArt'
 import { ScanStatusPanel } from '../components/ScanStatusPanel'
 import { SearchForm } from '../components/SearchForm'
 import { useRemote } from '../hooks/useRemote'
@@ -65,6 +66,7 @@ export function ScanPage({ accounts }: Props) {
 
       {list.length === 0 ? (
         <div className="empty">
+          <ProductArt kind="camera" className="empty-art" />
           <h2>Nenhuma busca ainda</h2>
           <p>Comece com algo que você conhece bem, como "iphone 13" até R$ 2.000.</p>
           <button type="button" className="btn btn--primary" onClick={() => setEditing({ mode: 'new' })}>
@@ -72,9 +74,9 @@ export function ScanPage({ accounts }: Props) {
           </button>
         </div>
       ) : (
-        <ul className="search-list">
-          {list.map((s) => (
-            <li key={s.id} className={`search${s.active ? '' : ' is-paused'}`}>
+        <ul className="search-list stagger">
+          {list.map((s, i) => (
+            <li key={s.id} className={`search${s.active ? '' : ' is-paused'}`} style={{ ['--i' as string]: i }}>
               <div className="search__main">
                 <h3>{s.query}</h3>
                 <p className="muted">

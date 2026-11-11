@@ -1,6 +1,6 @@
-# 📡 Radar Revenda
+# 🏷️ Achadão
 
-App desktop (Windows) que varre **Facebook Marketplace, OLX, Enjoei, Mercado Livre e Shopee**, identifica o
+**Seu achadão do dia.** App desktop (Windows) que varre **Facebook Marketplace, OLX, Enjoei, Mercado Livre e Shopee**, identifica o
 produto de cada anúncio com IA, compara com o preço de mercado (incluindo o Buscapé para preço de novo) e calcula se
 **vale a pena comprar para revender** — com lucro estimado por canal, nota de oportunidade e alertas de risco.
 
@@ -45,7 +45,7 @@ produto de cada anúncio com IA, compara com o preço de mercado (incluindo o Bu
 
 | Camada | Tecnologia |
 |---|---|
-| App desktop | Electron + React + TypeScript (electron-vite) |
+| App desktop | Electron + React + TypeScript (electron-vite), animações em CSS, fontes Unbounded + Inter embutidas |
 | Automação | Playwright (`playwright-core`) usando o Google Chrome instalado, com perfil próprio do app |
 | IA | Google Gemini API (`@google/genai`), modelo configurável (padrão `gemini-flash-latest`) |
 | Dados locais | Arquivos JSON validados com zod (`%APPDATA%\radar-revenda`) |
@@ -97,7 +97,7 @@ npm run dev        # abre o app em modo desenvolvimento
 npm test           # testes unitários (Vitest)
 npm run typecheck  # checagem de tipos
 npm run build      # build de produção em out/
-npm run dist       # gera o instalador em release/RadarRevenda-Setup-<versão>.exe
+npm run dist       # gera o instalador em release/Achadao-Setup-<versão>.exe
 ```
 
 Os dados locais (perfil do navegador com as sessões, buscas, oportunidades, histórico e a chave do Gemini

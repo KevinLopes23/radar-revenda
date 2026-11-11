@@ -1,4 +1,4 @@
-/** Catálogo das plataformas suportadas pelo Radar Revenda. */
+/** Catálogo das plataformas suportadas pelo Achadão. */
 
 export type PlatformId = 'facebook' | 'mercadolivre' | 'olx' | 'enjoei' | 'shopee' | 'buscape'
 

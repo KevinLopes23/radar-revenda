@@ -4,6 +4,7 @@ import type { Opportunity, OpportunityStatus } from '../../../shared/types'
 import { Modal } from '../components/Modal'
 import { OpportunityCard } from '../components/OpportunityCard'
 import { OpportunityDetail } from '../components/OpportunityDetail'
+import { ProductArt } from '../components/ProductArt'
 import { useRemote } from '../hooks/useRemote'
 import { brl, errorMessage, parseMoney } from '../lib/format'
 
@@ -78,7 +79,7 @@ export function OpportunitiesPage() {
       <header className="page__header page__header--row">
         <div>
           <p className="eyebrow">Oportunidades</p>
-          <h1>O que vale a pena comprar</h1>
+          <h1>Achados que valem a pena</h1>
         </div>
         <button type="button" className="btn btn--ghost" onClick={() => void opps.run(() => window.radar.opportunities.clearDiscarded())}>
           Limpar descartadas
@@ -125,13 +126,14 @@ export function OpportunitiesPage() {
 
       {opps.data && visible.length === 0 ? (
         <div className="empty">
+          <ProductArt kind="gamepad" className="empty-art" />
           <h2>Nada por aqui ainda</h2>
           <p>Cadastre buscas na aba Varredura e clique em "Rodar agora". As oportunidades aparecem aqui ordenadas pela nota.</p>
         </div>
       ) : (
-        <section className="opp-grid">
-          {visible.map((o) => (
-            <OpportunityCard key={o.id} opportunity={o} onDetails={showDetails} onOpen={open} onDiscard={discard} onBuy={startBuy} />
+        <section className="opp-grid stagger">
+          {visible.map((o, i) => (
+            <OpportunityCard key={o.id} index={i} opportunity={o} onDetails={showDetails} onOpen={open} onDiscard={discard} onBuy={startBuy} />
           ))}
         </section>
       )}

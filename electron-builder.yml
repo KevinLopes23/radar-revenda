@@ -1,5 +1,5 @@
-appId: br.kevma.radar-revenda
-productName: Radar Revenda
+appId: br.kevma.achadao
+productName: Achadão
 copyright: Uso pessoal
 directories:
   output: release
@@ -15,13 +15,13 @@ win:
     - target: nsis
       arch: [x64]
   icon: build/icon.png
-  artifactName: RadarRevenda-Setup-${version}.${ext}
+  artifactName: Achadao-Setup-${version}.${ext}
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Radar Revenda
-  uninstallDisplayName: Radar Revenda
+  shortcutName: Achadão
+  uninstallDisplayName: Achadão
   deleteAppDataOnUninstall: false
