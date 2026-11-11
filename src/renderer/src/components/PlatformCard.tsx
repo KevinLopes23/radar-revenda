@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { AccountState } from '../../../shared/ipc'
 import type { Platform, PlatformId } from '../../../shared/platforms'
+import { PLATFORM_LOGOS } from '../lib/platformLogos'
 import { StatusBadge } from './StatusBadge'
 
 type Props = {
@@ -66,11 +67,12 @@ function Actions({ platform, account, isBusy, onConnect, onConfirm, onDisconnect
 export function PlatformCard(props: Props) {
   const { platform, account } = props
   const style = { '--brand': platform.color } as CSSProperties
+  const logo = PLATFORM_LOGOS[platform.id]
   return (
     <article className="platform" style={style} aria-labelledby={`platform-${platform.id}`}>
       <header className="platform__head">
-        <span className="platform__logo" aria-hidden="true">
-          {platform.name.charAt(0)}
+        <span className={`platform__logo${logo.onBrand ? ' platform__logo--on-brand' : ''}`} aria-hidden="true">
+          <img src={logo.src} alt="" draggable={false} />
         </span>
         <div className="platform__title">
           <h3 id={`platform-${platform.id}`}>{platform.name}</h3>
