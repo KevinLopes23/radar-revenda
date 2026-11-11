@@ -52,12 +52,26 @@ export interface Flag {
   readonly text: string
 }
 
+/** Faixa típica de preços (do 1º ao 3º quartil): o que é barato e o que é caro no mercado. */
+export interface PriceRange {
+  readonly low: number
+  readonly high: number
+}
+
+/** Quão fácil é revender: depende de quantos usados do mesmo modelo estão à venda. */
+export type Liquidity = 'alta' | 'media' | 'baixa'
+
 export interface Analysis {
   readonly productName: string
   readonly productQuery: string
   readonly condition: ListingCondition
   readonly marketUsedPrice: number | null
   readonly marketNewPrice: number | null
+  /** Campos abaixo são opcionais porque análises antigas, já salvas, não os têm. */
+  readonly usedRange?: PriceRange | null
+  readonly liquidity?: Liquidity
+  /** Lucro no melhor canal se o produto só sair pelo preço baixo da faixa. */
+  readonly worstCaseProfit?: number | null
   readonly comparables: readonly Comparable[]
   readonly channels: readonly ChannelProfit[]
   readonly bestChannel: PlatformId | null

@@ -46,7 +46,7 @@ describe('analyzeListing', () => {
 
   it('computes the best resale channel and a positive profit', () => {
     expect(analysis.bestChannel).not.toBeNull()
-    expect(analysis.bestProfit).toBeGreaterThan(400)
+    expect(analysis.bestProfit).toBeGreaterThan(350)
     expect(analysis.channels[0]?.profit).toBe(analysis.bestProfit)
   })
 
@@ -96,6 +96,28 @@ describe('analyzeListing', () => {
     expect(result.channels).toEqual([])
     expect(result.score).toBe(0)
     expect(result.bestProfit).toBeNull()
+  })
+
+  it('shows the typical used price range and liquidity', () => {
+    expect(analysis.usedRange).toEqual({ low: 2075, high: 2225 })
+    expect(analysis.liquidity).toBe('media')
+  })
+
+  it('computes the profit if it only sells at the low end of the range', () => {
+    // Facebook sem taxas: 2075 com 12% de desconto (1826) - 1500.
+    expect(analysis.worstCaseProfit).toBe(326)
+  })
+
+  it('warns when selling at the low end of the market gives no profit', () => {
+    const pricey = listing('iPhone 13 128GB verde', 1850)
+    const result = analyzeListing({ listing: pricey, pool: [...pool, pricey], newReferences: newRefs, identification: null, settings: DEFAULT_SETTINGS })
+    expect(result.bestProfit).toBeGreaterThan(0)
+    expect(result.worstCaseProfit).toBeLessThanOrEqual(0)
+    expect(result.flags.some((f) => f.level === 'medio' && /menor preço/i.test(f.text))).toBe(true)
+  })
+
+  it('applies a realistic default discount for a quick sale', () => {
+    expect(DEFAULT_SETTINGS.quickSaleDiscountPct).toBe(12)
   })
 
   it('flags accessories', () => {

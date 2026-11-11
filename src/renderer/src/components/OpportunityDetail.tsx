@@ -1,4 +1,4 @@
-import type { FlagLevel, Opportunity } from '../../../shared/types'
+import type { FlagLevel, Liquidity, Opportunity } from '../../../shared/types'
 import { brl, platformName, scoreTone } from '../lib/format'
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
 
 const FLAG_ICON: Record<FlagLevel, string> = { alto: '⛔', medio: '⚠', info: 'ℹ', bom: '✔' }
 const CONDITION_LABEL = { novo: 'Novo', usado: 'Usado', desconhecido: 'Estado não informado' } as const
+const LIQUIDITY_LABEL: Record<Liquidity, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa' }
 
 export function OpportunityDetail({ opportunity, onOpen }: Props) {
   const { listing, analysis } = opportunity
@@ -30,8 +31,22 @@ export function OpportunityDetail({ opportunity, onOpen }: Props) {
             </div>
             <div>
               <strong>{brl(analysis.marketUsedPrice)}</strong>
-              <small>mercado usado</small>
+              <small>
+                mercado usado
+                {analysis.usedRange && (
+                  <>
+                    <br />
+                    faixa {brl(analysis.usedRange.low)} – {brl(analysis.usedRange.high)}
+                  </>
+                )}
+              </small>
             </div>
+            {analysis.liquidity && (
+              <div title="Quantos usados do mesmo modelo estão à venda: quanto mais, mais fácil revender.">
+                <strong>{LIQUIDITY_LABEL[analysis.liquidity]}</strong>
+                <small>liquidez</small>
+              </div>
+            )}
             <div>
               <strong>{brl(analysis.marketNewPrice)}</strong>
               <small>novo</small>
@@ -81,6 +96,13 @@ export function OpportunityDetail({ opportunity, onOpen }: Props) {
               ))}
             </tbody>
           </table>
+        )}
+        {analysis.worstCaseProfit != null && analysis.usedRange && (
+          <p className="muted">
+            Preço de venda = mercado usado menos o desconto para vender rápido, já com as taxas de cada canal. Se só sair pelo
+            preço baixo da faixa ({brl(analysis.usedRange.low)}), o lucro no melhor canal fica em{' '}
+            <strong className={analysis.worstCaseProfit > 0 ? 'is-profit' : 'is-loss'}>{brl(analysis.worstCaseProfit)}</strong>.
+          </p>
         )}
       </section>
 

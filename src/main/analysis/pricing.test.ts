@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Comparable } from '../../shared/types'
-import { estimateResalePrice, marketPrices, median, removeOutliers } from './pricing'
+import { estimateResalePrice, marketPrices, median, priceRange, removeOutliers } from './pricing'
 
 const comp = (price: number, condition: Comparable['condition'] = 'usado'): Comparable => ({
   platformId: 'olx',
@@ -37,7 +37,7 @@ describe('removeOutliers', () => {
 describe('marketPrices', () => {
   it('splits used and new prices and counts samples', () => {
     const result = marketPrices([comp(2000), comp(2200), comp(2400), comp(3500, 'novo'), comp(3700, 'novo')])
-    expect(result).toEqual({ usedMedian: 2200, newMedian: 3600, usedCount: 3, newCount: 2 })
+    expect(result).toEqual({ usedMedian: 2200, newMedian: 3600, usedCount: 3, newCount: 2, usedRange: { low: 2100, high: 2300 } })
   })
 
   it('treats unknown condition as used', () => {
@@ -45,20 +45,42 @@ describe('marketPrices', () => {
   })
 
   it('returns nulls when there are no comparables', () => {
-    expect(marketPrices([])).toEqual({ usedMedian: null, newMedian: null, usedCount: 0, newCount: 0 })
+    expect(marketPrices([])).toEqual({ usedMedian: null, newMedian: null, usedCount: 0, newCount: 0, usedRange: null })
+  })
+})
+
+describe('priceRange', () => {
+  it('needs at least two prices', () => {
+    expect(priceRange([1000])).toBeNull()
+  })
+
+  it('returns the interquartile range (typical low and high prices)', () => {
+    expect(priceRange([2000, 2100, 2200, 2300, 2400])).toEqual({ low: 2100, high: 2300 })
+  })
+})
+
+describe('marketPrices sanity checks', () => {
+  it('ignores new prices absurdly above the used market (wrong Buscapé match)', () => {
+    const result = marketPrices([comp(2400), comp(2500), comp(2600), comp(10499, 'novo')])
+    expect(result.newMedian).toBeNull()
+    expect(result.newCount).toBe(0)
+  })
+
+  it('keeps plausible new prices', () => {
+    expect(marketPrices([comp(2400), comp(2500), comp(4200, 'novo')]).newMedian).toBe(4200)
   })
 })
 
 describe('estimateResalePrice', () => {
   it('prefers the used market price', () => {
-    expect(estimateResalePrice({ usedMedian: 2000, newMedian: 3500, usedCount: 4, newCount: 2 })).toBe(2000)
+    expect(estimateResalePrice({ usedMedian: 2000, newMedian: 3500, usedCount: 4, newCount: 2, usedRange: null })).toBe(2000)
   })
 
   it('falls back to 70% of the new price', () => {
-    expect(estimateResalePrice({ usedMedian: null, newMedian: 1000, usedCount: 0, newCount: 3 })).toBe(700)
+    expect(estimateResalePrice({ usedMedian: null, newMedian: 1000, usedCount: 0, newCount: 3, usedRange: null })).toBe(700)
   })
 
   it('returns null without any reference', () => {
-    expect(estimateResalePrice({ usedMedian: null, newMedian: null, usedCount: 0, newCount: 0 })).toBeNull()
+    expect(estimateResalePrice({ usedMedian: null, newMedian: null, usedCount: 0, newCount: 0, usedRange: null })).toBeNull()
   })
 })

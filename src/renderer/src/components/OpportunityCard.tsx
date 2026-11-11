@@ -67,6 +67,7 @@ export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDisca
         <p className="opp__tags">
           {highRisks > 0 && <span className="tag tag--bad">⚠ {highRisks} risco(s)</span>}
           {isGoodSign && <span className="tag tag--good">vendedor com pressa</span>}
+          {analysis.liquidity === 'baixa' && <span className="tag tag--bad">revenda lenta</span>}
           {analysis.aiUsed && <span className="tag">IA</span>}
           <span className="tag">{analysis.comparables.length} comparações</span>
         </p>

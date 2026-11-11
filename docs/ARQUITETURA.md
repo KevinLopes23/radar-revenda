@@ -44,7 +44,8 @@ Busca salva ─► para cada plataforma marcada ─► aba do Chrome do app ─�
 ## Cálculo
 
 ```
-preço_mercado = mediana(anúncios do mesmo modelo, sem outliers)   # sem usados: 70% do preço de novo
+preço_mercado = mediana(anúncios do mesmo modelo, sem outliers)   # sem usados: 70% do preço de novo; "novo" > 2,5× o usado é descartado
+faixa = 1º e 3º quartis dos usados; pior_caso = lucro vendendo pelo 1º quartil; liquidez = nº de usados iguais (8+ alta, 4–7 média, <4 baixa)
 venda         = preço_mercado × (1 − desconto_venda_rápida)
 lucro_canal   = venda − venda × comissão% − taxa_fixa − frete − preço_pedido − custo_extra
 nota          = margem (≤6) + lucro absoluto (≤2) + confiança (≤2) − riscos

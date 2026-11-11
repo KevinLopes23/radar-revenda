@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ChannelFee } from '../../shared/types'
-import { channelProfit, computeChannels, scoreOpportunity } from './profit'
+import { channelProfit, computeChannels, liquidityOf, scoreOpportunity } from './profit'
 
 const noFee: ChannelFee = { percent: 0, fixed: 0, shipping: 0 }
 const mlFee: ChannelFee = { percent: 14, fixed: 6, shipping: 0 }
@@ -68,5 +68,20 @@ describe('scoreOpportunity', () => {
 
   it('returns zero when profit is unknown', () => {
     expect(scoreOpportunity({ profit: null, cost: 1000, comparablesCount: 0, flags: [] })).toBe(0)
+  })
+})
+
+describe('liquidityOf', () => {
+  it('rates how many used units of the same model are for sale', () => {
+    expect(liquidityOf(10)).toBe('alta')
+    expect(liquidityOf(5)).toBe('media')
+    expect(liquidityOf(2)).toBe('baixa')
+  })
+})
+
+describe('scoreOpportunity with liquidity', () => {
+  it('penalizes products that are hard to resell', () => {
+    const base = { profit: 300, cost: 1000, comparablesCount: 5, flags: [] }
+    expect(scoreOpportunity({ ...base, liquidity: 'baixa' })).toBeLessThan(scoreOpportunity({ ...base, liquidity: 'alta' }))
   })
 })

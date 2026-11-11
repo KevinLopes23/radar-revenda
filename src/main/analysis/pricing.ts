@@ -1,15 +1,19 @@
 /** Estatística de preços de mercado (funções puras). */
-import type { Comparable } from '../../shared/types'
+import type { Comparable, PriceRange } from '../../shared/types'
 
 const MIN_SAMPLES_FOR_OUTLIERS = 5
+const MIN_SAMPLES_FOR_RANGE = 2
 const IQR_FACTOR = 1.5
 const USED_FROM_NEW_RATIO = 0.7
+/** Um "novo" que custa mais que isso vezes o usado quase sempre é outro produto ou um preço fora da realidade. */
+const MAX_NEW_TO_USED_RATIO = 2.5
 
 export interface MarketPrices {
   readonly usedMedian: number | null
   readonly newMedian: number | null
   readonly usedCount: number
   readonly newCount: number
+  readonly usedRange: PriceRange | null
 }
 
 const round2 = (value: number): number => Math.round(value * 100) / 100
@@ -42,10 +46,26 @@ export function removeOutliers(values: readonly number[]): number[] {
   return values.filter((v) => v >= low && v <= high)
 }
 
+/** Faixa típica: metade dos anúncios custa entre \`low\` e \`high\`. */
+export function priceRange(values: readonly number[]): PriceRange | null {
+  if (values.length < MIN_SAMPLES_FOR_RANGE) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  return { low: round2(quantile(sorted, 0.25)), high: round2(quantile(sorted, 0.75)) }
+}
+
 export function marketPrices(comparables: readonly Comparable[]): MarketPrices {
   const used = removeOutliers(comparables.filter((c) => c.condition !== 'novo').map((c) => c.price))
-  const fresh = removeOutliers(comparables.filter((c) => c.condition === 'novo').map((c) => c.price))
-  return { usedMedian: median(used), newMedian: median(fresh), usedCount: used.length, newCount: fresh.length }
+  const usedMedian = median(used)
+  const newPrices = comparables.filter((c) => c.condition === 'novo').map((c) => c.price)
+  const plausibleNew = usedMedian === null ? newPrices : newPrices.filter((p) => p <= usedMedian * MAX_NEW_TO_USED_RATIO)
+  const fresh = removeOutliers(plausibleNew)
+  return {
+    usedMedian,
+    newMedian: median(fresh),
+    usedCount: used.length,
+    newCount: fresh.length,
+    usedRange: priceRange(used)
+  }
 }
 
 /** Preço de revenda de referência: mediana dos usados; sem usados, 70% do preço de novo. */

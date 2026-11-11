@@ -89,7 +89,7 @@ export const DEFAULT_SETTINGS: Settings = {
     shopee: fee(20, 4),
     buscape: fee(0, 0)
   },
-  quickSaleDiscountPct: 5,
+  quickSaleDiscountPct: 12,
   extraCostPerPurchase: 0,
   olxRegionPath: '',
   scan: { autoEnabled: false, intervalMinutes: 60, maxPerPlatform: 20, maxAnalysesPerRun: 25, minScoreToNotify: 7 }
