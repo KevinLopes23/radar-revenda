@@ -53,7 +53,8 @@ export const PLATFORMS: readonly Platform[] = [
     name: 'Mercado Livre',
     color: '#ffe600',
     homeUrl: 'https://www.mercadolivre.com.br/',
-    loginUrl: 'https://www.mercadolivre.com.br/login',
+    // "/login" no .com.br dá "página no existe"; o login fica no .com e volta (go=) para o .com.br.
+    loginUrl: 'https://www.mercadolivre.com/jms/mlb/lgz/login?platform_id=ML&go=https%3A%2F%2Fwww.mercadolivre.com.br%2F',
     cookieDomain: 'mercadolivre.com.br',
     roles: { buscaOfertas: true, precoReferencia: true, revenda: true },
     loginRequired: false,

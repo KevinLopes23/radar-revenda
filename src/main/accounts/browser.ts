@@ -16,6 +16,22 @@ export function browserErrorMessage(error: unknown): string {
   return `Falha no navegador: ${raw}`
 }
 
+interface LaunchMode {
+  readonly headless: boolean
+  readonly minimized?: boolean
+}
+
+/**
+ * Opções do Chrome do app. Sem `--enable-automation` e com `AutomationControlled` desligado,
+ * `navigator.webdriver` fica falso: senão o Google recusa o login ("navegador pode não ser seguro")
+ * e a Meta pede desafio antirrobô sem parar.
+ */
+export function chromeLaunchOptions({ headless, minimized = false }: LaunchMode) {
+  const args = ['--disable-blink-features=AutomationControlled', ...(minimized ? ['--start-minimized'] : [])]
+  const common = { channel: CHROME_CHANNEL, headless, acceptDownloads: false, ignoreDefaultArgs: ['--enable-automation'], args }
+  return headless ? common : { ...common, viewport: null, locale: 'pt-BR' }
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -113,14 +129,7 @@ export class BrowserManager {
 
   private async ensureVisibleContext(minimized = false): Promise<BrowserContext> {
     if (this.context) return this.context
-    const context = await chromium.launchPersistentContext(this.profileDir, {
-      channel: CHROME_CHANNEL,
-      headless: false,
-      viewport: null,
-      locale: 'pt-BR',
-      acceptDownloads: false,
-      args: minimized ? ['--start-minimized'] : []
-    })
+    const context = await chromium.launchPersistentContext(this.profileDir, chromeLaunchOptions({ headless: false, minimized }))
     context.on('close', () => {
       if (this.context !== context) return
       this.context = null
@@ -134,11 +143,7 @@ export class BrowserManager {
   /** Usa a janela aberta; se não houver, abre o perfil em modo invisível só para a operação. */
   private async withContext<T>(task: (context: BrowserContext) => Promise<T>): Promise<T> {
     if (this.context) return task(this.context)
-    const headless = await chromium.launchPersistentContext(this.profileDir, {
-      channel: CHROME_CHANNEL,
-      headless: true,
-      acceptDownloads: false
-    })
+    const headless = await chromium.launchPersistentContext(this.profileDir, chromeLaunchOptions({ headless: true }))
     try {
       return await task(headless)
     } finally {
