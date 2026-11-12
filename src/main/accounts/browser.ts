@@ -28,7 +28,9 @@ interface LaunchMode {
  */
 export function chromeLaunchOptions({ headless, minimized = false }: LaunchMode) {
   const args = ['--disable-blink-features=AutomationControlled', ...(minimized ? ['--start-minimized'] : [])]
-  const common = { channel: CHROME_CHANNEL, headless, acceptDownloads: false, ignoreDefaultArgs: ['--enable-automation'], args }
+  // chromiumSandbox: true impede o --no-sandbox que o Playwright põe por padrão. Esse flag aparece na janela
+  // ("linha de comando não suportada") e é um dos sinais que a Cloudflare (OLX) usa para barrar o navegador.
+  const common = { channel: CHROME_CHANNEL, headless, acceptDownloads: false, chromiumSandbox: true, ignoreDefaultArgs: ['--enable-automation'], args }
   return headless ? common : { ...common, viewport: null, locale: 'pt-BR' }
 }
 

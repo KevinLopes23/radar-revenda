@@ -12,6 +12,12 @@ describe('chromeLaunchOptions', () => {
     expect(chromeLaunchOptions({ headless: true })).toMatchObject({ channel: 'chrome', headless: true, acceptDownloads: false })
   })
 
+  it.each([true, false])('mantém o sandbox do Chrome ligado (headless=%s): sem --no-sandbox, que a Cloudflare da OLX usa p/ barrar', (headless) => {
+    const options = chromeLaunchOptions({ headless })
+    expect(options.chromiumSandbox).toBe(true)
+    expect(options.args).not.toContain('--no-sandbox')
+  })
+
   it('a janela visível usa o tamanho real e abre minimizada só quando pedido', () => {
     const visible = chromeLaunchOptions({ headless: false })
     expect(visible).toMatchObject({ headless: false, viewport: null, locale: 'pt-BR' })
