@@ -80,7 +80,9 @@ const storedOpportunitySchema = z.looseObject({
 const fee = (percent: number, fixed: number): ChannelFee => ({ percent, fixed, shipping: 0 })
 
 export const DEFAULT_SETTINGS: Settings = {
+  aiEngine: 'claude',
   geminiModel: 'gemini-flash-lite-latest',
+  claudeModel: 'haiku',
   fees: {
     facebook: fee(0, 0),
     olx: fee(0, 0),
@@ -110,7 +112,9 @@ const feesSchema = z.object(
 
 const scanDefaults = DEFAULT_SETTINGS.scan
 const settingsSchema = z.object({
+  aiEngine: z.enum(['gemini', 'claude']).default(DEFAULT_SETTINGS.aiEngine),
   geminiModel: z.string().trim().regex(/^[a-z0-9.-]{3,60}$/, 'Modelo inválido').default(DEFAULT_SETTINGS.geminiModel),
+  claudeModel: z.enum(['haiku', 'sonnet', 'opus']).default('haiku'),
   fees: feesSchema.default(DEFAULT_SETTINGS.fees),
   quickSaleDiscountPct: z.number().min(0).max(50).default(DEFAULT_SETTINGS.quickSaleDiscountPct),
   extraCostPerPurchase: z.number().min(0).max(5000).default(DEFAULT_SETTINGS.extraCostPerPurchase),

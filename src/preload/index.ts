@@ -26,7 +26,8 @@ const api: RadarApi = {
     save: invoke(IPC.settingsSave),
     setGeminiKey: invoke(IPC.settingsSetGeminiKey),
     clearGeminiKey: invoke(IPC.settingsClearGeminiKey),
-    testGemini: invoke(IPC.settingsTestGemini)
+    testGemini: invoke(IPC.settingsTestGemini),
+    testClaude: invoke(IPC.settingsTestClaude)
   },
   searches: {
     list: invoke(IPC.searchesList),

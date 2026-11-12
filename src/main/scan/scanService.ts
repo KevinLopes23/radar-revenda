@@ -3,7 +3,7 @@ import type { AccountState } from '../../shared/ipc'
 import { getPlatform, type PlatformId } from '../../shared/platforms'
 import type { Comparable, Listing, Opportunity, SavedSearch, ScanLogLevel, ScanStatus, Settings } from '../../shared/types'
 import type { BrowserManager } from '../accounts/browser'
-import { fetchImage, GeminiClient, isFatalGeminiError } from '../ai/gemini'
+import { createEngine } from '../ai/engine'
 import { analyzeListing, type ProductIdentification } from '../analysis/analyzer'
 import { detectCondition, normalizeText } from '../analysis/text'
 import type { OpportunitiesRepo, PriceCache, SearchesRepo } from '../data/repositories'
@@ -13,7 +13,6 @@ import { buildSearchUrl } from './sources'
 
 const MAX_LOG_ENTRIES = 200
 const PRICE_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000
-const AI_CALL_GAP_MS = 4_000
 const INTERVAL_JITTER = 0.1
 
 export interface ScanDeps {
@@ -187,19 +186,38 @@ export class ScanService {
     settings: Settings,
     created: Opportunity[]
   ): Promise<void> {
-    let gemini = this.createGemini(settings)
     const blockedPlatforms = new Set<PlatformId>()
+    // Fase 1: ler a descrição de todos os anúncios (é onde o vendedor costuma avisar defeitos).
+    const detailed: Listing[] = []
     for (const [index, rawListing] of fresh.entries()) {
       this.checkCancel()
       this.update({ message: `Lendo a descrição ${index + 1}/${fresh.length}: ${rawListing.title}` })
-      const listing = await this.withDescription(rawListing, blockedPlatforms)
-      this.checkCancel()
-      this.update({ message: `Analisando ${index + 1}/${fresh.length}: ${listing.title}` })
-      const { identification, fatal } = gemini ? await this.identify(gemini, listing) : { identification: null, fatal: false }
-      // Erro definitivo (chave, limite, modelo): segue o resto da rodada sem a IA. Sobrecarga passageira: tenta no próximo.
-      if (fatal) gemini = null
+      detailed.push(await this.withDescription(rawListing, blockedPlatforms))
+    }
+    // Fase 2: a IA identifica todos de uma vez (o Claude local faz numa chamada só; gasta o mínimo).
+    this.checkCancel()
+    const identifications = await this.runAi(detailed, settings)
+    // Fase 3: montar as oportunidades com a análise completa.
+    for (const listing of detailed) {
+      const identification = identifications.get(listing.id) ?? null
       const analysis = analyzeListing({ listing, pool, newReferences: references, identification, settings })
       created.push({ id: listing.id, searchId: search.id, listing, analysis, status: 'nova', foundAt: new Date().toISOString() })
+    }
+  }
+
+  /** Fase de IA: o motor escolhido (Gemini ou Claude local) identifica todos. Falha total segue sem IA. */
+  private async runAi(listings: readonly Listing[], settings: Settings): Promise<Map<string, ProductIdentification>> {
+    const engine = createEngine({ settings, getGeminiKey: () => this.deps.settings.getGeminiKey() })
+    if (!engine || listings.length === 0) return new Map()
+    this.update({ message: `Analisando ${listings.length} anúncio(s) com a IA (${engine.label})...` })
+    try {
+      return await engine.identifyAll(listings, {
+        onProgress: (done, total) => this.update({ message: `Analisando ${done}/${total} com a IA (${engine.label})...` }),
+        onWarn: (message) => this.log('aviso', message)
+      })
+    } catch (error) {
+      this.log('aviso', `${error instanceof Error ? error.message : String(error)} Seguindo com a análise simples.`)
+      return new Map()
     }
   }
 
@@ -222,27 +240,6 @@ export class ScanService {
         this.log('aviso', `Descrição de "${listing.title}" não lida: ${message}`)
       }
       return listing
-    }
-  }
-
-  private createGemini(settings: Settings): GeminiClient | null {
-    const key = this.deps.settings.getGeminiKey()
-    if (!key) return null
-    return new GeminiClient(key, settings.geminiModel)
-  }
-
-  private async identify(
-    gemini: GeminiClient,
-    listing: Listing
-  ): Promise<{ identification: ProductIdentification | null; fatal: boolean }> {
-    try {
-      const identification = await gemini.identify(listing, await fetchImage(listing.image))
-      await pause(AI_CALL_GAP_MS, AI_CALL_GAP_MS + 500)
-      return { identification, fatal: false }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      this.log('aviso', `IA: ${message} Usando análise sem IA para "${listing.title}".`)
-      return { identification: null, fatal: isFatalGeminiError(message) }
     }
   }
 

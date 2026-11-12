@@ -52,6 +52,8 @@ export interface RadarApi {
     setGeminiKey(key: string): Promise<SettingsView>
     clearGeminiKey(): Promise<SettingsView>
     testGemini(): Promise<GeminiTestResult>
+    /** Testa o Claude local (CLI do Claude Code deste PC) com o modelo configurado. */
+    testClaude(): Promise<GeminiTestResult>
   }
   readonly searches: {
     list(): Promise<readonly SavedSearch[]>
@@ -98,6 +100,7 @@ export const IPC = {
   settingsSetGeminiKey: 'settings:set-gemini-key',
   settingsClearGeminiKey: 'settings:clear-gemini-key',
   settingsTestGemini: 'settings:test-gemini',
+  settingsTestClaude: 'settings:test-claude',
   searchesList: 'searches:list',
   searchesCreate: 'searches:create',
   searchesUpdate: 'searches:update',

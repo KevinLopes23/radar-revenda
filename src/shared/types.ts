@@ -139,8 +139,15 @@ export interface ScanSettings {
   readonly minScoreToNotify: number
 }
 
+/** Qual IA analisa os anúncios: Gemini (API Google, grátis) ou Claude local (CLI do Claude Code deste PC). */
+export type AiEngineId = 'gemini' | 'claude'
+
 export interface Settings {
+  /** Motor de análise selecionado. */
+  readonly aiEngine: AiEngineId
   readonly geminiModel: string
+  /** Modelo do Claude local (haiku | sonnet | opus). */
+  readonly claudeModel: string
   readonly fees: Readonly<Record<PlatformId, ChannelFee>>
   /** Desconto sobre o preço de mercado para vender rápido (%). */
   readonly quickSaleDiscountPct: number

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { Listing } from '../../shared/types'
 import { belongsToDomain } from '../accounts/loginStatus'
 import type { ProductIdentification } from '../analysis/analyzer'
+import { buildListingPrompt } from './listingPrompt'
 
 const IMAGE_TIMEOUT_MS = 8_000
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024
@@ -14,7 +15,7 @@ export interface InlineImage {
   readonly data: string
 }
 
-const identificationSchema = z.object({
+export const identificationSchema = z.object({
   productName: z.string().min(1).max(200),
   productQuery: z.string().min(1).max(120),
   condition: z.enum(['novo', 'usado', 'desconhecido']),
@@ -164,18 +165,6 @@ export async function fetchImage(url: string | null): Promise<InlineImage | null
   }
 }
 
-/** Impede que o texto do anúncio feche o delimitador ou injete marcações. */
-const sanitizeForPrompt = (text: string): string => text.replace(/[<>]/g, ' ')
-
-/** Texto do anúncio para o prompt: card + descrição completa, sem tags. */
-function listingPrompt(listing: Listing): string {
-  const description = listing.description?.replace(/<[^>]*>/g, '').trim() || '(não disponível)'
-  return sanitizeForPrompt(
-    `Plataforma: ${listing.platformId}\nTítulo: ${listing.title}\nPreço: R$ ${listing.price}\nTexto do card:\n${listing.text}\n` +
-      `Descrição completa do anúncio:\n${description}`
-  )
-}
-
 /** Modelo com cota gratuita maior: usado quando o escolhido bate no limite (429) ou está sobrecarregado (503). */
 export const FALLBACK_MODEL = 'gemini-flash-lite-latest'
 const FALLBACK_STATUSES: ReadonlySet<number> = new Set([429, ...OVERLOAD_STATUSES])
@@ -241,7 +230,7 @@ export class GeminiClient {
   }
 
   async identify(listing: Listing, image: InlineImage | null): Promise<ProductIdentification> {
-    const listingText = listingPrompt(listing)
+    const listingText = buildListingPrompt(listing)
     const parts = [
       { text: `<anuncio>\n${listingText}\n</anuncio>` },
       ...(image ? [{ inlineData: { mimeType: image.mimeType, data: image.data } }] : [])

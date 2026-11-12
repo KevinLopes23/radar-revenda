@@ -1,4 +1,5 @@
 import { PLATFORMS } from '../../../shared/platforms'
+import { AiEngineSection } from '../components/AiEngineSection'
 import { GeminiSection } from '../components/GeminiSection'
 import { Icon } from '../components/Icon'
 import { PlatformCard } from '../components/PlatformCard'
@@ -65,6 +66,7 @@ export function SettingsPage({ accounts }: Props) {
       {settings.error && <p className="alert" role="alert">{settings.error}</p>}
       {settings.data && (
         <>
+          <AiEngineSection settings={settings.data} onChange={(next) => void settings.run(async () => next)} />
           <GeminiSection settings={settings.data} onChange={(next) => void settings.run(async () => next)} />
           <PreferencesSection key={settings.data.geminiModel} settings={settings.data} onChange={(next) => void settings.run(async () => next)} />
         </>

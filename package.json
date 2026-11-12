@@ -1,6 +1,6 @@
 {
   "name": "radar-revenda",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "App desktop que analisa ofertas do Facebook Marketplace e calcula se vale a pena revender",
   "main": "./out/main/index.js",

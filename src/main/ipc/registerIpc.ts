@@ -6,6 +6,7 @@ import type { GeminiTestResult } from '../../shared/types'
 import type { AccountsService } from '../accounts/accountsService'
 import { belongsToDomain } from '../accounts/loginStatus'
 import { GeminiClient } from '../ai/gemini'
+import { testClaudeLocal } from '../ai/claudeLocal'
 import type { OpportunitiesRepo, PurchasesRepo, SearchesRepo } from '../data/repositories'
 import {
   parseId,
@@ -60,12 +61,23 @@ function registerAccounts({ accounts }: IpcDeps): void {
   ipcMain.handle(IPC.accountsCloseBrowser, () => accounts.closeBrowser())
 }
 
+async function testClaude(settings: SettingsService): Promise<GeminiTestResult> {
+  const model = settings.get().claudeModel
+  try {
+    await testClaudeLocal(model)
+    return { ok: true, message: `Claude local respondeu (modelo ${model}).` }
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) }
+  }
+}
+
 function registerSettings({ settings }: IpcDeps): void {
   ipcMain.handle(IPC.settingsGet, () => settings.view())
   ipcMain.handle(IPC.settingsSave, (_e, raw: unknown) => settings.save(raw))
   ipcMain.handle(IPC.settingsSetGeminiKey, (_e, key: unknown) => settings.setGeminiKey(key))
   ipcMain.handle(IPC.settingsClearGeminiKey, () => settings.clearGeminiKey())
   ipcMain.handle(IPC.settingsTestGemini, () => testGemini(settings))
+  ipcMain.handle(IPC.settingsTestClaude, () => testClaude(settings))
 }
 
 function registerSearchesAndScan({ searches, scan }: IpcDeps): void {
