@@ -25,7 +25,7 @@ export type ClaudeRunner = (prompt: string, model: string) => Promise<string>
 const BATCH_INSTRUCTIONS = `${INSTRUCTIONS}
 
 Você vai receber VÁRIOS anúncios, cada um com um índice. Responda APENAS com um ARRAY JSON — um objeto por anúncio, NA MESMA ORDEM e na mesma quantidade. Não escreva nada fora do array nem use blocos de markdown.
-Cada objeto: productName (string), productQuery (string em minúsculas, sem cor), condition ("novo"|"usado"|"desconhecido"), isAccessory (boolean), risks (string[], até 3), defects (string[]: defeitos, avarias ou peças faltando que o vendedor cita; vazio se nada), defectSeverity ("nenhum"|"leve"|"grave"), repairCost (number em reais, 0 se sem defeito), verdict (string curta: ainda compensa revender?).`
+Cada objeto: productName (string), productQuery (string em minúsculas, sem cor), condition ("novo"|"usado"|"desconhecido"), isAccessory (boolean), risks (string[], até 3), defects (string[]: defeitos, avarias ou peças faltando que o vendedor cita; vazio se nada), defectSeverity ("nenhum"|"leve"|"grave"), repairCost (number em reais, 0 se sem defeito), verdict (string curta: ainda compensa revender?), usedMarketPriceBRL (number: preço médio de um USADO deste mesmo modelo/capacidade à venda no Brasil hoje, pelo seu conhecimento de mercado, NÃO o preço pedido no anúncio; 0 se for acessório ou não souber).`
 
 function buildBatchPrompt(listings: readonly Listing[]): string {
   const blocks = listings.map(

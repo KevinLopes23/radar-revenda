@@ -55,8 +55,11 @@ export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDisca
             <dd>{brl(listing.price)}</dd>
           </div>
           <div>
-            <dt>Mercado</dt>
-            <dd>{brl(analysis.marketUsedPrice ?? analysis.marketNewPrice)}</dd>
+            <dt>Mercado{analysis.marketUsedEstimated ? ' · usado (estimado)' : ''}</dt>
+            <dd title={analysis.marketUsedEstimated ? 'Preço médio do usado estimado pela IA' : undefined}>
+              {analysis.marketUsedEstimated && analysis.marketUsedPrice !== null ? '~' : ''}
+              {brl(analysis.marketUsedPrice ?? analysis.marketNewPrice)}
+            </dd>
           </div>
           <div className={analysis.bestProfit !== null && analysis.bestProfit > 0 ? 'is-profit' : 'is-loss'}>
             <dt>Lucro{analysis.bestChannel ? ` · vendendo na ${platformName(analysis.bestChannel).replace(' Marketplace', '')}` : ''}</dt>
@@ -69,7 +72,13 @@ export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDisca
           {isGoodSign && <span className="tag tag--good">vendedor com pressa</span>}
           {analysis.liquidity === 'baixa' && <span className="tag tag--bad">revenda lenta</span>}
           {analysis.aiUsed && <span className="tag">IA</span>}
-          <span className="tag">{analysis.comparables.length} comparações</span>
+          {analysis.comparables.length > 0 ? (
+            <span className="tag">{analysis.comparables.length} comparações</span>
+          ) : analysis.marketUsedEstimated ? (
+            <span className="tag">preço estimado</span>
+          ) : (
+            <span className="tag">sem comparação</span>
+          )}
         </p>
 
         <div className="opp__actions">

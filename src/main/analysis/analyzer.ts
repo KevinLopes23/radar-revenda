@@ -19,6 +19,8 @@ export interface ProductIdentification {
   readonly repairCost?: number
   /** Se ainda compensa, numa frase. */
   readonly verdict?: string
+  /** Preço médio de um USADO deste modelo/capacidade à venda no Brasil hoje (estimativa da IA, em reais). */
+  readonly usedMarketPriceBRL?: number
 }
 
 interface AnalyzeInput {
@@ -106,6 +108,13 @@ export function trustedIdentification(identification: ProductIdentification | nu
   }
 }
 
+/** Preço de usado estimado pela IA: vira o "mercado" quando a varredura não achou anúncios iguais. */
+function aiUsedMarketPrice(identification: ProductIdentification | null): number | null {
+  const raw = identification?.usedMarketPriceBRL
+  if (raw === undefined || !Number.isFinite(raw) || raw <= 0) return null
+  return Math.round(Math.min(raw, 10_000_000))
+}
+
 /** Conserto da IA: número não confiável, fica entre 0 e o preço do próprio anúncio. */
 function repairCostOf(identification: ProductIdentification | null, price: number): number | null {
   const raw = identification?.repairCost
@@ -141,7 +150,11 @@ export function analyzeListing(rawInput: AnalyzeInput): Analysis {
   const comparables = findComparables(input, productQuery)
   const market = marketPrices(comparables)
 
-  const baseResale = estimateResalePrice(market)
+  // Preço do usado: o real (mediana dos comparáveis) quando existe; senão a estimativa da IA, marcada.
+  const aiUsedPrice = aiUsedMarketPrice(identification)
+  const usedMarket = market.usedMedian ?? aiUsedPrice
+  const marketUsedEstimated = market.usedMedian === null && aiUsedPrice !== null
+  const baseResale = usedMarket ?? estimateResalePrice(market)
   const isNew = condition === 'novo' && market.newMedian !== null
   const resale = isNew && market.newMedian !== null ? market.newMedian * NEW_ITEM_RESALE_RATIO : baseResale
   const repairCost = repairCostOf(identification, listing.price)
@@ -158,7 +171,8 @@ export function analyzeListing(rawInput: AnalyzeInput): Analysis {
     productName: identification?.productName || listing.title,
     productQuery,
     condition,
-    marketUsedPrice: market.usedMedian,
+    marketUsedPrice: usedMarket,
+    marketUsedEstimated,
     marketNewPrice: market.newMedian,
     usedRange: market.usedRange,
     liquidity,

@@ -68,6 +68,8 @@ export interface Analysis {
   readonly productQuery: string
   readonly condition: ListingCondition
   readonly marketUsedPrice: number | null
+  /** O preço do usado acima veio da estimativa da IA (não de anúncios iguais achados na varredura). */
+  readonly marketUsedEstimated?: boolean
   readonly marketNewPrice: number | null
   /** Campos abaixo são opcionais porque análises antigas, já salvas, não os têm. */
   readonly usedRange?: PriceRange | null

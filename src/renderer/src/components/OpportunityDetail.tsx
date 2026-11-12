@@ -30,9 +30,12 @@ export function OpportunityDetail({ opportunity, onOpen }: Props) {
               <small>pedindo</small>
             </div>
             <div>
-              <strong>{brl(analysis.marketUsedPrice)}</strong>
+              <strong>
+                {analysis.marketUsedEstimated && analysis.marketUsedPrice !== null ? '~' : ''}
+                {brl(analysis.marketUsedPrice)}
+              </strong>
               <small>
-                mercado usado
+                {analysis.marketUsedEstimated ? 'mercado usado (estimado pela IA)' : 'mercado usado'}
                 {analysis.usedRange && (
                   <>
                     <br />

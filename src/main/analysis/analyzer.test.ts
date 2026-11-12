@@ -165,3 +165,28 @@ describe('analyzeListing', () => {
     expect(result.flags.some((f) => /acessório/i.test(f.text))).toBe(true)
   })
 })
+
+describe('preço do usado estimado pela IA', () => {
+  const lonely = listing('iPhone 11 64GB', 800)
+  const ai = (over: object) => ({ productName: 'iPhone 11 64GB', productQuery: 'iphone 11 64gb', condition: 'usado' as const, isAccessory: false, risks: [], ...over })
+
+  it('sem anúncios iguais na varredura, usa a estimativa da IA como mercado e dá nota', () => {
+    const result = analyzeListing({ listing: lonely, pool: [lonely], newReferences: [], identification: ai({ usedMarketPriceBRL: 1300 }), settings: DEFAULT_SETTINGS })
+    expect(result.marketUsedPrice).toBe(1300)
+    expect(result.marketUsedEstimated).toBe(true)
+    expect(result.bestProfit).toBeGreaterThan(0)
+    expect(result.score).toBeGreaterThan(0)
+  })
+
+  it('havendo comparáveis reais, usa o preço real e não marca como estimado', () => {
+    const result = analyzeListing({ listing: target, pool, newReferences: newRefs, identification: ai({ productQuery: 'iphone 13 128gb', usedMarketPriceBRL: 99_999 }), settings: DEFAULT_SETTINGS })
+    expect(result.marketUsedPrice).toBe(2150)
+    expect(result.marketUsedEstimated).toBe(false)
+  })
+
+  it('estimativa zero/ausente não inventa mercado', () => {
+    const zero = analyzeListing({ listing: lonely, pool: [lonely], newReferences: [], identification: ai({ usedMarketPriceBRL: 0 }), settings: DEFAULT_SETTINGS })
+    expect(zero.marketUsedPrice).toBeNull()
+    expect(zero.marketUsedEstimated).toBe(false)
+  })
+})
