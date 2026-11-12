@@ -104,6 +104,44 @@ describe('GeminiClient: modelo reserva', () => {
     expect(calls).toEqual(['gemini-flash-latest', FALLBACK_MODEL])
   })
 
+  /** Modelo que falha com 503 nas primeiras N chamadas, depois responde. */
+  const flakyAi = (failsByModel: Record<string, number>) => {
+    const calls: string[] = []
+    const left = { ...failsByModel }
+    const ai = {
+      models: {
+        generateContent: async ({ model }: { model: string }) => {
+          calls.push(model)
+          if ((left[model] ?? 0) > 0) {
+            left[model] = (left[model] ?? 0) - 1
+            throw new ApiError({ status: 503, message: 'high demand' })
+          }
+          return ok
+        }
+      }
+    }
+    return { ai: ai as unknown as GoogleGenAI, calls }
+  }
+  const noSleep = async (): Promise<void> => undefined
+
+  it('503 passageiro no reserva: espera e tenta de novo até funcionar', async () => {
+    const { ai, calls } = flakyAi({ [FALLBACK_MODEL]: 1 })
+    const waits: number[] = []
+    const client = new GeminiClient('k', FALLBACK_MODEL, ai, async (ms) => void waits.push(ms))
+    await client.identify(listing, null)
+    expect(calls).toEqual([FALLBACK_MODEL, FALLBACK_MODEL])
+    expect(waits).toHaveLength(1)
+  })
+
+  it('tudo sobrecarregado: depois das retentativas, mensagem de sobrecarga e não é fatal', async () => {
+    const { ai } = flakyAi({ [FALLBACK_MODEL]: 9 })
+    const msg = await new GeminiClient('k', FALLBACK_MODEL, ai, noSleep)
+      .identify(listing, null)
+      .then(() => '', (e: Error) => e.message)
+    expect(msg).toMatch(/sobrecarregad|instável/i)
+    expect(isFatalGeminiError(msg)).toBe(false)
+  })
+
   it('só chave, limite, modelo e timeout desligam a IA na rodada (sobrecarga passageira não)', () => {
     expect(isFatalGeminiError(describeGeminiError(new ApiError({ status: 429, message: 'x' })))).toBe(true)
     expect(isFatalGeminiError(describeGeminiError(new ApiError({ status: 403, message: 'x' })))).toBe(true)

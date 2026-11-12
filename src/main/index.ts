@@ -14,6 +14,7 @@ import {
   type PriceCacheData
 } from './data/repositories'
 import { DEFAULT_SETTINGS, parseOpportunities, parsePurchases, parseSearches, parseStoredSettings } from './data/validation'
+import { runAiSelftest } from './ai/selftest'
 import { registerIpc } from './ipc/registerIpc'
 import { ScanService } from './scan/scanService'
 import { parseSecrets, SettingsService, type Secrets } from './settings/settingsService'
@@ -119,7 +120,13 @@ function createWindow(): BrowserWindow {
 
 app.setAppUserModelId('br.kevma.achadao')
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Diagnóstico da IA (só com --ai-selftest): roda chamadas controladas ao Gemini e sai.
+  if (process.argv.includes('--ai-selftest')) {
+    await runAiSelftest(settings.getGeminiKey(), settings.get().geminiModel, join(dataDir, 'ai-selftest.txt')).catch(() => undefined)
+    app.quit()
+    return
+  }
   // O app não precisa de câmera, microfone, localização, notificações web etc.
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
   session.defaultSession.setPermissionCheckHandler(() => false)

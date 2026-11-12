@@ -80,7 +80,7 @@ const storedOpportunitySchema = z.looseObject({
 const fee = (percent: number, fixed: number): ChannelFee => ({ percent, fixed, shipping: 0 })
 
 export const DEFAULT_SETTINGS: Settings = {
-  geminiModel: 'gemini-flash-latest',
+  geminiModel: 'gemini-flash-lite-latest',
   fees: {
     facebook: fee(0, 0),
     olx: fee(0, 0),
