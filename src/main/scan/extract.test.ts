@@ -108,6 +108,41 @@ describe('parseCard', () => {
     expect(parseCard({ url: 'https://www.olx.com.br/d/x-1', text: 'Sem preço', image: null }, 'olx', 'x')).toBeNull()
   })
 
+  it('uses the first line, not the longer neighborhood line, when no line matches the query (OLX)', () => {
+    const listing = parseCard(
+      {
+        url: 'https://sp.olx.com.br/regiao-de-sao-jose-do-rio-preto/games/consoles-de-video-game/playstation-4-slim-500gb-1552140578',
+        text: "PlayStation 4 slim 500Gb\nR$ 1.150\n\nEstrela D'Oeste, Jardim São Paulo\n\nHoje, 18:50\n\nSlide 1\nSlide 2\nAdicionar aos favoritos",
+        image: null
+      },
+      'olx',
+      'ps4'
+    )
+    expect(listing?.title).toBe('PlayStation 4 slim 500Gb')
+  })
+
+  it('keeps a 3-letter title like Ps4 instead of the neighborhood (OLX)', () => {
+    const listing = parseCard(
+      {
+        url: 'https://sp.olx.com.br/sao-paulo-e-regiao/games/consoles-de-video-game/ps4-1552147260',
+        text: 'Ps4\nParcele sem juros\nR$ 700\nem até 3x de R$ 233,33 sem juros\n\nSão Paulo, Brás\n\nHoje, 19:21\n\nSlide 1\nAdicionar aos favoritos',
+        image: null
+      },
+      'olx',
+      'ps4'
+    )
+    expect(listing?.title).toBe('Ps4')
+  })
+
+  it('does not pick a short badge like Pix as the title', () => {
+    const listing = parseCard(
+      { url: 'https://shopee.com.br/x-i.1.2', text: 'Pix\nConsole Playstation Sony Slim\nR$ 1.999', image: null },
+      'shopee',
+      'ps4'
+    )
+    expect(listing?.title).toBe('Console Playstation Sony Slim')
+  })
+
   it('falls back to the URL slug when the text has no title', () => {
     const listing = parseCard(
       { url: 'https://www.enjoei.com.br/p/iphone-13-rosa-128gb-154588647', text: 'R$ 2.150', image: null },

@@ -64,11 +64,19 @@ function titleFromSlug(url: string): string | null {
   }
 }
 
+/** Linha curta (ex.: "Ps4") só vale como título se tiver palavra da busca; senão costuma ser selo ("Pix", "Top"). */
+const sharesQueryToken = (line: string, query: string): boolean => {
+  const queryTokens = new Set(tokenize(query))
+  return tokenize(line).some((t) => queryTokens.has(t))
+}
+
 function pickTitle(lines: readonly string[], query: string): string | null {
   const queryTokens = new Set(tokenize(query))
-  const scored = lines.map((line) => {
+  // Sem palavra da busca no texto, vence a linha mais acima do card (onde fica o título);
+  // a mais longa costumava ser o bairro/cidade na OLX.
+  const scored = lines.map((line, index) => {
     const overlap = tokenize(line).filter((t) => queryTokens.has(t)).length
-    return { line, score: overlap * 10 + Math.min(line.length, 80) / 80 }
+    return { line, score: overlap * 10 - index / lines.length }
   })
   scored.sort((a, b) => b.score - a.score)
   return scored[0]?.line ?? null
@@ -85,7 +93,7 @@ export function parseCard(raw: RawCard, platformId: PlatformId, query: string): 
     (l) =>
       !l.includes('R$') &&
       l !== location &&
-      l.length >= MIN_TITLE_LENGTH &&
+      (l.length >= MIN_TITLE_LENGTH || sharesQueryToken(l, query)) &&
       !NOISE_LINE.test(normalizeText(l))
   )
   const title = (pickTitle(candidates, query) ?? titleFromSlug(raw.url) ?? 'Anúncio sem título').slice(0, MAX_TITLE_LENGTH)
