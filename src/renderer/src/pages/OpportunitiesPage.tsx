@@ -36,8 +36,25 @@ export function OpportunitiesPage() {
   const [buying, setBuying] = useState<Opportunity | null>(null)
   const [paid, setPaid] = useState('')
   const [isSaving, setSaving] = useState(false)
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set())
 
   const visible = useMemo(() => applyFilters(opps.data ?? [], status, minScore, platform, sort), [opps.data, status, minScore, platform, sort])
+
+  const togglePick = (o: Opportunity): void =>
+    setPicked((prev) => {
+      const next = new Set(prev)
+      if (next.has(o.id)) next.delete(o.id)
+      else next.add(o.id)
+      return next
+    })
+  const pickAllVisible = (): void => setPicked(new Set(visible.map((o) => o.id)))
+  const clearPick = (): void => setPicked(new Set())
+  const removePicked = async (): Promise<void> => {
+    const ids = [...picked]
+    if (ids.length === 0) return
+    if (!window.confirm(`Limpar ${ids.length} oportunidade(s) selecionada(s)? Isso não pode ser desfeito.`)) return
+    if (await opps.run(() => window.radar.opportunities.removeMany(ids))) clearPick()
+  }
 
   const open = (url: string): void => {
     window.radar.app.openExternal(url).catch((e: unknown) => opps.setError(errorMessage(e)))
@@ -81,9 +98,24 @@ export function OpportunitiesPage() {
           <p className="eyebrow">Oportunidades</p>
           <h1>Achados que valem a pena</h1>
         </div>
-        <button type="button" className="btn btn--ghost" onClick={() => void opps.run(() => window.radar.opportunities.clearDiscarded())}>
-          Limpar descartadas
-        </button>
+        <div className="page__header-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button type="button" className="btn btn--ghost" onClick={pickAllVisible} disabled={visible.length === 0}>
+            Selecionar todas ({visible.length})
+          </button>
+          {picked.size > 0 && (
+            <>
+              <button type="button" className="btn btn--ghost" onClick={clearPick}>
+                Limpar seleção
+              </button>
+              <button type="button" className="btn btn--danger" onClick={() => void removePicked()}>
+                Limpar {picked.size} selecionada(s)
+              </button>
+            </>
+          )}
+          <button type="button" className="btn btn--ghost" onClick={() => void opps.run(() => window.radar.opportunities.clearDiscarded())}>
+            Limpar descartadas
+          </button>
+        </div>
       </header>
 
       <div className="filters" role="group" aria-label="Filtros">
@@ -133,7 +165,17 @@ export function OpportunitiesPage() {
       ) : (
         <section className="opp-grid stagger">
           {visible.map((o, i) => (
-            <OpportunityCard key={o.id} index={i} opportunity={o} onDetails={showDetails} onOpen={open} onDiscard={discard} onBuy={startBuy} />
+            <OpportunityCard
+              key={o.id}
+              index={i}
+              opportunity={o}
+              onDetails={showDetails}
+              onOpen={open}
+              onDiscard={discard}
+              onBuy={startBuy}
+              isSelected={picked.has(o.id)}
+              onToggleSelect={togglePick}
+            />
           ))}
         </section>
       )}

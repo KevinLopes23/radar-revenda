@@ -72,6 +72,8 @@ export interface RadarApi {
     list(): Promise<readonly Opportunity[]>
     setStatus(id: string, status: OpportunityStatus): Promise<readonly Opportunity[]>
     clearDiscarded(): Promise<readonly Opportunity[]>
+    /** Remove as oportunidades escolhidas (uma, várias ou todas). */
+    removeMany(ids: readonly string[]): Promise<readonly Opportunity[]>
     onChange(listener: Listener<readonly Opportunity[]>): Unsubscribe
   }
   readonly purchases: {
@@ -112,6 +114,7 @@ export const IPC = {
   opportunitiesList: 'opportunities:list',
   opportunitiesSetStatus: 'opportunities:set-status',
   opportunitiesClearDiscarded: 'opportunities:clear-discarded',
+  opportunitiesRemoveMany: 'opportunities:remove-many',
   opportunitiesChanged: 'opportunities:changed',
   purchasesList: 'purchases:list',
   purchasesAdd: 'purchases:add',

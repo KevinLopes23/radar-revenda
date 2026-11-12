@@ -80,6 +80,14 @@ describe('OpportunitiesRepo', () => {
     repo.setStatus('a', 'descartada')
     expect(repo.clearDiscarded().map((o) => o.id)).toEqual(['b'])
   })
+
+  it('removes the chosen ids (selection or all)', () => {
+    const repo = oppsRepo()
+    repo.addMany([opportunity('a'), opportunity('b'), opportunity('c')])
+    expect(repo.removeMany(['a', 'c']).map((o) => o.id)).toEqual(['b'])
+    expect(repo.removeMany([]).map((o) => o.id)).toEqual(['b'])
+    expect(repo.removeMany(['b']).map((o) => o.id)).toEqual([])
+  })
 })
 
 describe('PurchasesRepo', () => {

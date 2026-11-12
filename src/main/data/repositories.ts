@@ -89,6 +89,13 @@ export class OpportunitiesRepo {
   clearDiscarded(): Opportunity[] {
     return this.file.update((all) => all.filter((o) => o.status !== 'descartada'))
   }
+
+  /** Remove as oportunidades escolhidas (seleção ou "todas"). */
+  removeMany(ids: readonly string[]): Opportunity[] {
+    if (ids.length === 0) return this.list()
+    const remove = new Set(ids)
+    return this.file.update((all) => all.filter((o) => !remove.has(o.id)))
+  }
 }
 
 export class PurchasesRepo {

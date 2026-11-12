@@ -45,6 +45,7 @@ const api: RadarApi = {
     list: invoke(IPC.opportunitiesList),
     setStatus: invoke(IPC.opportunitiesSetStatus),
     clearDiscarded: invoke(IPC.opportunitiesClearDiscarded),
+    removeMany: invoke(IPC.opportunitiesRemoveMany),
     onChange: (listener) => subscribe(IPC.opportunitiesChanged, listener)
   },
   purchases: {

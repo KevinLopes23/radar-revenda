@@ -10,6 +10,9 @@ type Props = {
   onOpen: (url: string) => void
   onDiscard: (o: Opportunity) => void
   onBuy: (o: Opportunity) => void
+  /** Seleção para limpeza em massa (opcional). */
+  isSelected?: boolean
+  onToggleSelect?: (o: Opportunity) => void
 }
 
 /** Luz que acompanha o mouse dentro do card. */
@@ -19,7 +22,7 @@ function trackPointer(e: MouseEvent<HTMLElement>): void {
   e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`)
 }
 
-export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDiscard, onBuy }: Props) {
+export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDiscard, onBuy, isSelected, onToggleSelect }: Props) {
   const { listing, analysis, status } = opportunity
   const tone = scoreTone(analysis.score)
   const highRisks = analysis.flags.filter((f) => f.level === 'alto').length
@@ -28,10 +31,30 @@ export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDisca
 
   return (
     <article
-      className={`opp spotlight${isDone ? ' opp--done' : ''}`}
-      style={{ ['--i' as string]: index }}
+      className={`opp spotlight${isDone ? ' opp--done' : ''}${isSelected ? ' opp--selected' : ''}`}
+      style={{
+        ['--i' as string]: index,
+        position: 'relative',
+        outline: isSelected ? '2px solid #a3e635' : undefined,
+        outlineOffset: isSelected ? '2px' : undefined
+      }}
       onMouseMove={trackPointer}
     >
+      {onToggleSelect && (
+        <label
+          className="opp__select"
+          title="Selecionar para limpar"
+          style={{ position: 'absolute', top: 10, left: 10, zIndex: 4, cursor: 'pointer' }}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected ?? false}
+            onChange={() => onToggleSelect(opportunity)}
+            aria-label={`Selecionar ${listing.title}`}
+            style={{ width: 20, height: 20, cursor: 'pointer' }}
+          />
+        </label>
+      )}
       <button type="button" className="opp__media" onClick={() => onDetails(opportunity)} aria-label={`Detalhes de ${listing.title}`}>
         {listing.image ? <img src={listing.image} alt="" loading="lazy" referrerPolicy="no-referrer" /> : <span>sem foto</span>}
         <span className={`score score--${tone}`} title="Nota da oportunidade">

@@ -10,6 +10,7 @@ import { testClaudeLocal } from '../ai/claudeLocal'
 import type { OpportunitiesRepo, PurchasesRepo, SearchesRepo } from '../data/repositories'
 import {
   parseId,
+  parseIds,
   parseOpportunityStatus,
   parsePurchaseInput,
   parseSaleInput,
@@ -99,6 +100,11 @@ function registerOpportunitiesAndPurchases({ opportunities, purchases, onOpportu
   })
   ipcMain.handle(IPC.opportunitiesClearDiscarded, () => {
     const result = opportunities.clearDiscarded()
+    onOpportunitiesChanged()
+    return result
+  })
+  ipcMain.handle(IPC.opportunitiesRemoveMany, (_e, ids: unknown) => {
+    const result = opportunities.removeMany(parseIds(ids))
     onOpportunitiesChanged()
     return result
   })

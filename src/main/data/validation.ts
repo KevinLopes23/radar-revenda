@@ -158,6 +158,9 @@ export const parseSaleInput = (raw: unknown): SaleInput => parseOrThrow(saleInpu
 export const parseOpportunityStatus = (raw: unknown): OpportunityStatus => parseOrThrow(opportunityStatusSchema, raw)
 export const parseSettings = (raw: unknown): Settings => parseOrThrow(settingsSchema, raw ?? {})
 export const parseId = (raw: unknown): string => parseOrThrow(z.string().min(1).max(500), raw)
+/** Lista de ids (seleção): descarta silenciosamente qualquer item fora do formato. */
+export const parseIds = (raw: unknown): string[] =>
+  Array.isArray(raw) ? raw.flatMap((x) => (typeof x === 'string' && x.length > 0 && x.length <= 500 ? [x] : [])) : []
 
 export const parseSearches = (raw: unknown): SavedSearch[] => parseList(savedSearchSchema, raw)
 export const parsePurchases = (raw: unknown): Purchase[] => parseList(purchaseSchema, raw)
