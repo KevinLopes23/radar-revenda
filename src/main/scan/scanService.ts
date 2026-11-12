@@ -3,12 +3,12 @@ import type { AccountState } from '../../shared/ipc'
 import { getPlatform, type PlatformId } from '../../shared/platforms'
 import type { Comparable, Listing, Opportunity, SavedSearch, ScanLogLevel, ScanStatus, Settings } from '../../shared/types'
 import type { BrowserManager } from '../accounts/browser'
-import { fetchImage, GeminiClient } from '../ai/gemini'
+import { fetchImage, GeminiClient, isFatalGeminiError } from '../ai/gemini'
 import { analyzeListing, type ProductIdentification } from '../analysis/analyzer'
 import { detectCondition, normalizeText } from '../analysis/text'
 import type { OpportunitiesRepo, PriceCache, SearchesRepo } from '../data/repositories'
 import type { SettingsService } from '../settings/settingsService'
-import { BlockedError, pause, scrapeSearchPage } from './pageScraper'
+import { BlockedError, pause, readDescription, scrapeSearchPage } from './pageScraper'
 import { buildSearchUrl } from './sources'
 
 const MAX_LOG_ENTRIES = 200
@@ -188,14 +188,40 @@ export class ScanService {
     created: Opportunity[]
   ): Promise<void> {
     let gemini = this.createGemini(settings)
-    for (const [index, listing] of fresh.entries()) {
+    const blockedPlatforms = new Set<PlatformId>()
+    for (const [index, rawListing] of fresh.entries()) {
+      this.checkCancel()
+      this.update({ message: `Lendo a descrição ${index + 1}/${fresh.length}: ${rawListing.title}` })
+      const listing = await this.withDescription(rawListing, blockedPlatforms)
       this.checkCancel()
       this.update({ message: `Analisando ${index + 1}/${fresh.length}: ${listing.title}` })
-      const identification = gemini ? await this.identify(gemini, listing) : null
-      // Se a IA falhar (chave, limite), segue o resto da rodada sem ela.
-      if (gemini && identification === null) gemini = null
+      const { identification, fatal } = gemini ? await this.identify(gemini, listing) : { identification: null, fatal: false }
+      // Erro definitivo (chave, limite, modelo): segue o resto da rodada sem a IA. Sobrecarga passageira: tenta no próximo.
+      if (fatal) gemini = null
       const analysis = analyzeListing({ listing, pool, newReferences: references, identification, settings })
       created.push({ id: listing.id, searchId: search.id, listing, analysis, status: 'nova', foundAt: new Date().toISOString() })
+    }
+  }
+
+  /**
+   * Abre o anúncio para ler a descrição completa (é ali que o vendedor costuma avisar defeitos).
+   * Se a plataforma bloquear, para de abrir anúncios dela nesta rodada (insistir arrisca a conta).
+   */
+  private async withDescription(listing: Listing, blocked: Set<PlatformId>): Promise<Listing> {
+    if (blocked.has(listing.platformId)) return listing
+    try {
+      const description = await this.deps.browser.withPage((page) => readDescription(page, listing))
+      await pause(1_500, 3_000)
+      return { ...listing, description }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (error instanceof BlockedError) {
+        blocked.add(listing.platformId)
+        this.log('aviso', `${getPlatform(listing.platformId).name} bloqueou a leitura dos anúncios (${message}). Seguindo só com o texto do card.`)
+      } else {
+        this.log('aviso', `Descrição de "${listing.title}" não lida: ${message}`)
+      }
+      return listing
     }
   }
 
@@ -205,14 +231,18 @@ export class ScanService {
     return new GeminiClient(key, settings.geminiModel)
   }
 
-  private async identify(gemini: GeminiClient, listing: Listing): Promise<ProductIdentification | null> {
+  private async identify(
+    gemini: GeminiClient,
+    listing: Listing
+  ): Promise<{ identification: ProductIdentification | null; fatal: boolean }> {
     try {
-      const result = await gemini.identify(listing, await fetchImage(listing.image))
+      const identification = await gemini.identify(listing, await fetchImage(listing.image))
       await pause(AI_CALL_GAP_MS, AI_CALL_GAP_MS + 500)
-      return result
+      return { identification, fatal: false }
     } catch (error) {
-      this.log('aviso', `IA: ${error instanceof Error ? error.message : String(error)} Usando análise sem IA.`)
-      return null
+      const message = error instanceof Error ? error.message : String(error)
+      this.log('aviso', `IA: ${message} Usando análise sem IA para "${listing.title}".`)
+      return { identification: null, fatal: isFatalGeminiError(message) }
     }
   }
 

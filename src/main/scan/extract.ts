@@ -12,7 +12,7 @@ export interface RawCard {
 const PRICE_PATTERN = /R\$\s*(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?/
 const LOCATION_PATTERN = /^[A-ZÀ-Úa-zà-ú][^,\n]{1,40},\s?[A-Z]{2}$/
 const NOISE_LINE =
-  /^(\d+([.,]\d+)?%?|\d+([.,]\d)?\s*\(\d+\)|oferta.*|via .*|compare.*|frete.*|em ate.*|ate \d+x.*|\d+x .*|parcel.*|patrocinado|anuncio|destaque|novo|usado|retire.*|entrega.*|full|mais vendido.*|cupom.*|desconto.*|loja oficial.*|.*% .*)$/
+  /^(\d+([.,]\d+)?%?|\d+([.,]\d)?\s*\(\d+\)|oferta.*|via .*|compare.*|frete.*|em ate.*|ate \d+x.*|\d+x .*|parcel.*|patrocinado|anuncio|destaque|barateou|baixou|novo|usado|retire.*|entrega.*|full|mais vendido.*|cupom.*|desconto.*|loja oficial.*|.*% .*)$/
 const ALL_PRICES_PATTERN = new RegExp(PRICE_PATTERN.source, 'g')
 /** Linhas com parcela, frete ou cashback não trazem o preço do produto. */
 const NOT_PRODUCT_PRICE_LINE = /(\d+\s?x\b|\bx de\b|parcela|frete|cashback|de volta|economize|acima de)/i

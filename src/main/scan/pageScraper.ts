@@ -3,6 +3,7 @@ import type { Page } from 'playwright-core'
 import { z } from 'zod'
 import type { PlatformId } from '../../shared/platforms'
 import type { Listing } from '../../shared/types'
+import { cleanDescription, DESCRIPTION_SELECTORS, MAX_DESCRIPTION_LENGTH } from './description'
 import { parseCard, type RawCard } from './extract'
 import { detectBlock, isTrustedItemUrl, itemUrlPattern } from './sources'
 
@@ -70,6 +71,26 @@ function validCards(raw: unknown, platformId: PlatformId): RawCard[] {
 async function assertNotBlocked(page: Page): Promise<void> {
   const reason = detectBlock(page.url(), await page.title().catch(() => ''))
   if (reason) throw new BlockedError(reason)
+}
+
+/** Executado na página do anúncio: texto do primeiro seletor que existir, senão a descrição das meta tags. */
+const COLLECT_DESCRIPTION = `(selectors) => {
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    const text = el ? (el.innerText || '').trim() : '';
+    if (text) return text;
+  }
+  const meta = document.querySelector('meta[property="og:description"]') || document.querySelector('meta[name="description"]');
+  return meta ? meta.getAttribute('content') : null;
+}`
+
+/** Abre a página do anúncio e lê a descrição completa do vendedor; `null` se não achar. */
+export async function readDescription(page: Page, listing: Pick<Listing, 'platformId' | 'url'>): Promise<string | null> {
+  await page.goto(listing.url, { waitUntil: 'domcontentloaded', timeout: NAVIGATION_TIMEOUT_MS })
+  await pause(2_500, 4_000)
+  await assertNotBlocked(page)
+  const raw: unknown = await page.evaluate(`(${COLLECT_DESCRIPTION})(${JSON.stringify(DESCRIPTION_SELECTORS[listing.platformId])})`)
+  return typeof raw === 'string' ? cleanDescription(raw.slice(0, MAX_DESCRIPTION_LENGTH * 2)) : null
 }
 
 export interface ScrapeOptions {

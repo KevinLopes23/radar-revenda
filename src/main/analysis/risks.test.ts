@@ -9,12 +9,33 @@ describe('detectFlags', () => {
     expect(flags.some((f) => f.level === 'alto' && /golpe/i.test(f.text))).toBe(true)
   })
 
-  it.each(['iCloud bloqueado', 'não liga', 'para retirada de peças', 'com defeito na tela'])(
+  it.each([
+    'iCloud bloqueado',
+    'não liga',
+    'para retirada de peças',
+    'com defeito na tela',
+    'disco travado no console',
+    'manete as vezes dá drift',
+    'não lê disco',
+    'controle com problema no analógico'
+  ])(
     'flags defect keywords: %s',
     (text) => {
       expect(levels(detectFlags({ text, price: 1500, marketPrice: 2000, comparablesCount: 5 }))).toContain('alto')
     }
   )
+
+  it.each(['sem defeito nenhum, sem drift nos controles', 'não tem defeito, funcionando tudo', 'nenhum problema, zero defeito'])(
+    'não acusa defeito negado na descrição: %s',
+    (text) => {
+      expect(levels(detectFlags({ text, price: 1500, marketPrice: 2000, comparablesCount: 5 }))).not.toContain('alto')
+    }
+  )
+
+  it('acusa o defeito real mesmo se outra frase nega outro', () => {
+    const text = 'sem riscos na carcaça, mas o controle tem drift'
+    expect(levels(detectFlags({ text, price: 1500, marketPrice: 2000, comparablesCount: 5 }))).toContain('alto')
+  })
 
   it('flags replicas as medium risk', () => {
     expect(levels(detectFlags({ text: 'AirPods réplica primeira linha', price: 100, marketPrice: null, comparablesCount: 0 }))).toContain('medio')

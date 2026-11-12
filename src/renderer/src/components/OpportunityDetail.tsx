@@ -58,6 +58,19 @@ export function OpportunityDetail({ opportunity, onOpen }: Props) {
         </div>
       </div>
 
+      {analysis.aiVerdict && (
+        <section>
+          <h4>Ainda compensa?</h4>
+          <p className="verdict">{analysis.aiVerdict}</p>
+          <p className="muted">Opinião da IA a partir do texto do vendedor: confira o produto antes de pagar.</p>
+          {analysis.repairCost != null && analysis.repairCost > 0 && (
+            <p className="muted">
+              Conserto estimado: <strong>{brl(analysis.repairCost)}</strong>, já descontado do lucro abaixo.
+            </p>
+          )}
+        </section>
+      )}
+
       {analysis.flags.length > 0 && (
         <section>
           <h4>Alertas</h4>
@@ -122,6 +135,13 @@ export function OpportunityDetail({ opportunity, onOpen }: Props) {
           ))}
         </ul>
       </section>
+
+      {listing.description && (
+        <details open>
+          <summary>Descrição do vendedor</summary>
+          <pre className="raw">{listing.description}</pre>
+        </details>
+      )}
 
       {listing.text && (
         <details>

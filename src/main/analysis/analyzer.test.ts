@@ -78,6 +78,45 @@ describe('analyzeListing', () => {
     expect(tricked.productQuery).toBe('iphone 13 128gb')
   })
 
+  it('acha defeito escrito só na descrição completa do anúncio (sem IA)', () => {
+    const withDescription = { ...target, description: 'Console funcionando, mas o controle está com defeito no analógico.' }
+    const result = analyzeListing({ listing: withDescription, pool, newReferences: newRefs, identification: null, settings: DEFAULT_SETTINGS })
+    expect(result.flags.some((f) => f.level === 'alto' && f.text.includes('defeito'))).toBe(true)
+  })
+
+  describe('defeitos lidos pela IA na descrição', () => {
+    const base = { productName: 'iPhone 13', productQuery: 'iphone 13 128gb', condition: 'usado' as const, isAccessory: false, risks: [] }
+    const run = (extra: object) =>
+      analyzeListing({ listing: target, pool, newReferences: newRefs, identification: { ...base, ...extra }, settings: DEFAULT_SETTINGS })
+
+    it('defeito grave vira alerta alto; leve vira médio', () => {
+      expect(run({ defects: ['Tela trincada'], defectSeverity: 'grave' }).flags).toContainEqual({ level: 'alto', text: 'Defeito: Tela trincada' })
+      expect(run({ defects: ['Risco na traseira'], defectSeverity: 'leve' }).flags).toContainEqual({ level: 'medio', text: 'Defeito: Risco na traseira' })
+    })
+
+    it('desconta o conserto estimado do lucro e da nota', () => {
+      const clean = run({})
+      const broken = run({ defects: ['Bateria 70%'], defectSeverity: 'leve', repairCost: 300 })
+      expect(broken.repairCost).toBe(300)
+      expect(broken.bestProfit).toBeCloseTo((clean.bestProfit ?? 0) - 300, 0)
+      expect(broken.score).toBeLessThan(clean.score)
+      expect(broken.flags.some((f) => f.text.includes('conserto') && f.text.includes('R$ 300'))).toBe(true)
+    })
+
+    it('conserto vindo da IA é limitado (não confiável): negativo vira 0 e no máximo o preço do anúncio', () => {
+      expect(run({ repairCost: -500 }).repairCost).toBe(0)
+      expect(run({ repairCost: 999_999 }).repairCost).toBe(target.price)
+    })
+
+    it('guarda o veredito da IA, sem links nem contatos (o texto do vendedor pode ter tentado manipular a IA)', () => {
+      expect(run({ verdict: 'Compensa se negociar o conserto da bateria.' }).aiVerdict).toBe('Compensa se negociar o conserto da bateria.')
+      expect(run({ verdict: 'Compre em https://golpe.com' }).aiVerdict).toBeNull()
+      expect(run({ verdict: 'Chame no wa.me/5511999999999' }).aiVerdict).toBeNull()
+      expect(run({ verdict: 'Ligue 11 98888-7777 e garanta' }).aiVerdict).toBeNull()
+      expect(run({ verdict: 'Veja bit.ly/oferta' }).aiVerdict).toBeNull()
+    })
+  })
+
   it('drops AI risks that contain links', () => {
     const result = analyzeListing({
       listing: target,

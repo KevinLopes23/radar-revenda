@@ -706,6 +706,14 @@ label.check,
   font-size: 14px;
 }
 
+.verdict {
+  margin: 0 0 6px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+}
+
 .flags,
 .comps {
   display: grid;

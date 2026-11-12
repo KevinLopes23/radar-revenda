@@ -143,6 +143,15 @@ describe('parseCard', () => {
     expect(listing?.title).toBe('Console Playstation Sony Slim')
   })
 
+  it('ignores the Enjoei "barateou" badge when choosing the title', () => {
+    const listing = parseCard(
+      { url: 'https://www.enjoei.com.br/p/ps4-slim-1-154689045', text: 'barateou\nR$ 650\nR$ 800\nconsole playstation 4 slim 1tb\nsony', image: null },
+      'enjoei',
+      'ps4'
+    )
+    expect(listing?.title).toBe('console playstation 4 slim 1tb')
+  })
+
   it('falls back to the URL slug when the text has no title', () => {
     const listing = parseCard(
       { url: 'https://www.enjoei.com.br/p/iphone-13-rosa-128gb-154588647', text: 'R$ 2.150', image: null },

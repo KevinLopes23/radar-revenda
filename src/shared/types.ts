@@ -28,6 +28,8 @@ export interface Listing {
   readonly location: string | null
   /** Texto bruto do card (usado para detectar riscos e condição). */
   readonly text: string
+  /** Descrição completa lida na página do anúncio (defeitos costumam estar aqui). */
+  readonly description?: string | null
 }
 
 export interface Comparable {
@@ -79,6 +81,10 @@ export interface Analysis {
   readonly marginPct: number | null
   readonly score: number
   readonly flags: readonly Flag[]
+  /** Conserto estimado pela IA a partir da descrição (já descontado do lucro). */
+  readonly repairCost?: number | null
+  /** Frase da IA dizendo se ainda compensa, considerando os defeitos citados. */
+  readonly aiVerdict?: string | null
   readonly aiUsed: boolean
   readonly analyzedAt: string
 }

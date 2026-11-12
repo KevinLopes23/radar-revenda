@@ -6,9 +6,23 @@ const SCAM_PRICE_RATIO = 0.4
 const MIN_RELIABLE_COMPARABLES = 3
 
 const DEFECT_PATTERN =
-  /\b(icloud|bloquead[oa]|nao liga|retirada de pecas|para pecas|defeito|tela (quebrada|trincada)|sem face ?id|conta google|placa queimada|molhou|oxidad[oa]|nao carrega|nao funciona)\b/
+  /\b(icloud|bloquead[oa]|nao liga|retirada de pecas|para pecas|defeito|tela (quebrada|trincada)|sem face ?id|conta google|placa queimada|molhou|oxidad[oa]|nao carrega|nao funciona|travad[oa]|drift|drifit|nao le( o)? (disco|cd|chip)|com problema)\b/
 const REPLICA_PATTERN = /\b(replica|primeira linha|clone|paralel[oa]|sem nota|nao tenho nota|nao possui nota)\b/
 const HURRY_PATTERN = /\b(urgente|mudanca|preciso vender|viagem|precisando|queima)\b/
+
+const DEFECT_PATTERN_ALL = new RegExp(DEFECT_PATTERN.source, 'g')
+/** "sem defeito", "não tem drift", "zero defeito": a descrição completa nega muito mais do que o card. */
+const NEGATED = /\b(sem|nao tem|nao possui|nao apresenta|nenhum|zero|livre de)\s+(\S+\s+)?$/
+const LOOKBEHIND_CHARS = 30
+
+/** Primeiro defeito citado que não esteja negado logo antes. */
+function firstRealDefect(normalized: string): string | null {
+  for (const match of normalized.matchAll(DEFECT_PATTERN_ALL)) {
+    const before = normalized.slice(Math.max(0, match.index - LOOKBEHIND_CHARS), match.index)
+    if (!NEGATED.test(before)) return match[0]
+  }
+  return null
+}
 
 interface FlagInput {
   readonly text: string
@@ -29,8 +43,8 @@ export function detectFlags({ text, price, marketPrice, comparablesCount }: Flag
     })
   }
 
-  const defect = DEFECT_PATTERN.exec(normalized)
-  if (defect) flags.push({ level: 'alto', text: `Possível defeito ou bloqueio: "${defect[0]}".` })
+  const defect = firstRealDefect(normalized)
+  if (defect) flags.push({ level: 'alto', text: `Possível defeito ou bloqueio: "${defect}".` })
 
   const replica = REPLICA_PATTERN.exec(normalized)
   if (replica) flags.push({ level: 'medio', text: `Atenção: "${replica[0]}" — pode não ser original ou não ter nota.` })
