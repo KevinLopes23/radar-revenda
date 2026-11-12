@@ -66,6 +66,11 @@ describe('isAccessoryTitle', () => {
   it('does not flag the product itself', () => {
     expect(isAccessoryTitle('iPhone 13 128GB com caixa e carregador')).toBe(false)
   })
+
+  it('pega acessório mesmo quando começa com palavra de venda ("nova - capa...")', () => {
+    expect(isAccessoryTitle('nova - capa iphone 11 pro max')).toBe(true)
+    expect(isAccessoryTitle('kit transformação iphone pro max')).toBe(true)
+  })
 })
 
 describe('heuristicProductQuery', () => {

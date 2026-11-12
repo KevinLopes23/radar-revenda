@@ -51,8 +51,10 @@ const isSpec = (token: string): boolean => /\d/.test(token) || isVariant(token)
 
 export function isAccessoryTitle(title: string): boolean {
   const normalized = normalizeText(title)
-  const first = normalized.split(' ')[0] ?? ''
-  return ACCESSORY_FIRST_WORDS.has(first) || ACCESSORY_PHRASES.test(normalized)
+  const firstWord = normalized.split(' ')[0] ?? ''
+  // Também o 1º token significativo: "nova - capa iphone" começa com "nova" (palavra de venda), mas é capa.
+  const firstToken = tokenize(title)[0] ?? ''
+  return ACCESSORY_FIRST_WORDS.has(firstWord) || ACCESSORY_FIRST_WORDS.has(firstToken) || ACCESSORY_PHRASES.test(normalized)
 }
 
 /**

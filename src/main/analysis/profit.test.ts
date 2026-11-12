@@ -61,6 +61,18 @@ describe('scoreOpportunity', () => {
     expect(risky).toBeLessThan(safe - 2)
   })
 
+  it('várias cautelas médias não zeram um bom negócio (têm teto)', () => {
+    const medios = Array.from({ length: 4 }, (_, i) => ({ level: 'medio' as const, text: `cautela ${i}` }))
+    const score = scoreOpportunity({ profit: 710, cost: 3099, comparablesCount: 1, flags: medios, liquidity: 'baixa' })
+    expect(score).toBeGreaterThan(0)
+  })
+
+  it('um risco alto (golpe/quebrado) ainda derruba forte a nota', () => {
+    const clean = scoreOpportunity({ profit: 710, cost: 3099, comparablesCount: 1, flags: [], liquidity: 'baixa' })
+    const risky = scoreOpportunity({ profit: 710, cost: 3099, comparablesCount: 1, flags: [{ level: 'alto', text: 'bloqueado' }], liquidity: 'baixa' })
+    expect(risky).toBeLessThan(clean - 3)
+  })
+
   it('stays within 0 and 10', () => {
     const score = scoreOpportunity({ profit: 100000, cost: 1, comparablesCount: 100, flags: [{ level: 'bom', text: 'x' }] })
     expect(score).toBeLessThanOrEqual(10)

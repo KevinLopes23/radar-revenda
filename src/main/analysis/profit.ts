@@ -7,6 +7,8 @@ const MARGIN_POINTS_PER_UNIT = 20
 const MAX_PROFIT_POINTS = 2
 const PROFIT_PER_POINT = 150
 const PENALTY: Readonly<Record<Flag['level'], number>> = { alto: -3.5, medio: -1.5, info: 0, bom: 0.5 }
+/** Teto da penalidade de cautelas médias juntas: várias (IMEI, bateria, detalhe na foto) não podem zerar um bom negócio. */
+const MAX_MEDIO_PENALTY = -3
 const LIQUIDITY_POINTS: Readonly<Record<Liquidity, number>> = { alta: 0, media: 0, baixa: -1 }
 const HIGH_LIQUIDITY_MIN = 8
 const MEDIUM_LIQUIDITY_MIN = 4
@@ -74,7 +76,10 @@ export function scoreOpportunity({ profit, cost, comparablesCount, flags, liquid
   if (profit === null || profit <= 0 || cost <= 0) return 0
   const marginPoints = Math.min(MAX_MARGIN_POINTS, (profit / cost) * MARGIN_POINTS_PER_UNIT)
   const profitPoints = Math.min(MAX_PROFIT_POINTS, profit / PROFIT_PER_POINT)
-  const riskPoints = flags.reduce((sum, flag) => sum + PENALTY[flag.level], 0)
+  // Risco alto (golpe, bloqueado, quebrado) e bônus entram cheios; cautelas médias juntas têm teto.
+  const nonMedio = flags.filter((f) => f.level !== 'medio').reduce((sum, f) => sum + PENALTY[f.level], 0)
+  const medioPenalty = Math.max(MAX_MEDIO_PENALTY, flags.filter((f) => f.level === 'medio').length * PENALTY.medio)
+  const riskPoints = nonMedio + medioPenalty
   const total = marginPoints + profitPoints + confidencePoints(comparablesCount) + LIQUIDITY_POINTS[liquidity] + riskPoints
   return Math.round(clamp(total, 0, 10) * 10) / 10
 }
