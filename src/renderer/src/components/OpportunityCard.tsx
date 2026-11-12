@@ -63,7 +63,10 @@ export function OpportunityCard({ opportunity, index, onDetails, onOpen, onDisca
           </div>
           <div className={analysis.bestProfit !== null && analysis.bestProfit > 0 ? 'is-profit' : 'is-loss'}>
             <dt>Lucro{analysis.bestChannel ? ` · vendendo na ${platformName(analysis.bestChannel).replace(' Marketplace', '')}` : ''}</dt>
-            <dd>{brl(analysis.bestProfit)}</dd>
+            <dd>
+              {brl(analysis.bestProfit)}
+              {analysis.repairCost ? <small className="opp__repair"> (−{brl(analysis.repairCost)} conserto)</small> : null}
+            </dd>
           </div>
         </dl>
 
