@@ -76,6 +76,11 @@ const KEY_ERROR = 'Chave do Gemini inválida ou sem permissão.'
 const LIMIT_ERROR = 'Limite do Gemini atingido. Tente mais tarde ou reduza as análises por rodada.'
 const MODEL_ERROR = 'Modelo do Gemini não encontrado. Confira o nome do modelo em Configurações.'
 const TIMEOUT_ERROR = 'O Gemini demorou demais para responder (está sobrecarregado). Tente mais tarde.'
+const OVERLOAD_ERROR =
+  'O Gemini está instável agora (sobrecarregado). Tentei o modelo reserva; neste anúncio a análise ficou sem IA. Rode a varredura de novo daqui a pouco.'
+
+/** Erros de servidor passageiros (sobrecarga/deadline): troca para o modelo reserva e segue tentando. */
+const OVERLOAD_STATUSES: ReadonlySet<number> = new Set([500, 502, 503, 504])
 
 /** Status HTTP do ApiError do @google/genai, quando houver. */
 const httpStatus = (error: unknown): number | null => {
@@ -95,6 +100,7 @@ export function describeGeminiError(error: unknown): string {
     if (status === 401 || status === 403 || (status === 400 && /API_KEY_INVALID|\bapi key not valid\b/i.test(raw))) return KEY_ERROR
     if (status === 429) return LIMIT_ERROR
     if (status === 404) return MODEL_ERROR
+    if (OVERLOAD_STATUSES.has(status)) return OVERLOAD_ERROR
     return `Falha no Gemini (HTTP ${status}): ${raw.slice(0, 200)}`
   }
   if (/API_KEY_INVALID|PERMISSION_DENIED|\bapi key\b/i.test(raw)) return KEY_ERROR
@@ -172,7 +178,7 @@ function listingPrompt(listing: Listing): string {
 
 /** Modelo com cota gratuita maior: usado quando o escolhido bate no limite (429) ou está sobrecarregado (503). */
 export const FALLBACK_MODEL = 'gemini-flash-lite-latest'
-const FALLBACK_STATUSES: ReadonlySet<number> = new Set([429, 503])
+const FALLBACK_STATUSES: ReadonlySet<number> = new Set([429, ...OVERLOAD_STATUSES])
 
 /** Erros que não adianta repetir na mesma rodada (chave, limite, modelo, lentidão); o resto é passageiro. */
 export const isFatalGeminiError = (message: string): boolean => /Chave|Limite|Modelo|demorou demais/.test(message)

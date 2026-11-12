@@ -98,16 +98,17 @@ describe('GeminiClient: modelo reserva', () => {
     expect(calls).toEqual(['gemini-flash-latest', FALLBACK_MODEL, FALLBACK_MODEL])
   })
 
-  it('modelo sobrecarregado (503) também passa para o reserva', async () => {
-    const { ai, calls } = fakeAi(new Set(['gemini-flash-latest']), 503)
+  it.each([503, 504, 500, 502])('servidor instável (%s) também passa para o reserva', async (status) => {
+    const { ai, calls } = fakeAi(new Set(['gemini-flash-latest']), status)
     await new GeminiClient('k', 'gemini-flash-latest', ai).identify(listing, null)
     expect(calls).toEqual(['gemini-flash-latest', FALLBACK_MODEL])
   })
 
-  it('só chave, limite, modelo e timeout desligam a IA na rodada (503 passageiro não)', () => {
+  it('só chave, limite, modelo e timeout desligam a IA na rodada (sobrecarga passageira não)', () => {
     expect(isFatalGeminiError(describeGeminiError(new ApiError({ status: 429, message: 'x' })))).toBe(true)
     expect(isFatalGeminiError(describeGeminiError(new ApiError({ status: 403, message: 'x' })))).toBe(true)
     expect(isFatalGeminiError(describeGeminiError(new ApiError({ status: 503, message: 'high demand' })))).toBe(false)
+    expect(isFatalGeminiError(describeGeminiError(new ApiError({ status: 504, message: 'Deadline expired' })))).toBe(false)
     expect(isFatalGeminiError('O Gemini respondeu num formato inesperado.')).toBe(false)
   })
 
@@ -130,7 +131,14 @@ describe('describeGeminiError', () => {
     expect(describeGeminiError(api(400, 'API key not valid. API_KEY_INVALID'))).toMatch(/Chave/)
     expect(describeGeminiError(api(403, 'forbidden'))).toMatch(/Chave/)
     expect(describeGeminiError(api(429, 'RESOURCE_EXHAUSTED'))).toMatch(/Limite/)
-    expect(describeGeminiError(api(503, 'high demand'))).toMatch(/HTTP 503/)
+  })
+
+  it('servidor instável (503/504/500) vira mensagem clara de sobrecarga, sem o JSON cru', () => {
+    for (const status of [503, 504, 500, 502]) {
+      const msg = describeGeminiError(api(status, '{"error":{"code":' + status + ',"message":"Deadline expired"}}'))
+      expect(msg).toMatch(/sobrecarregad|instável/i)
+      expect(msg).not.toMatch(/\{"error"/)
+    }
   })
 
   it('timeout do SDK vira mensagem clara em português', () => {
